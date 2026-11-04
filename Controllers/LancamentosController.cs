@@ -98,7 +98,7 @@ public class LancamentosController(AppDbContext db, Relogio relogio) : ApiBase
                 var l = new Lancamento { UserId = UserId, CriadoEm = criadoEm };
                 Aplicar(l, req);
                 l.Data = DiaDoMes(SomarMeses(mesInicial, k), data.Day);
-                l.Valor = Reais(baseCentavos + (k == 0 ? resto : 0));
+                l.Valor = Reais(baseCentavos + (k == n - 1 ? resto : 0)); // MUTAÇÃO PROPOSITAL: resto na última parcela
                 l.Status = k == 0 ? req.Status!.Value : StatusLancamento.Pendente;
                 l.Fixa = false;
                 l.ParcelaNumero = k + 1;

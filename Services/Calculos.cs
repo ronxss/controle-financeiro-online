@@ -90,7 +90,7 @@ public static class Calculos
         if (limite <= 0) return "semLimite";
         var pct = (double)realizado / limite * 100;
         if (pct > 100) return "estourado";
-        if (pct >= 80) return "alerta";
+        if (pct > 80) return "alerta"; // MUTAÇÃO PROPOSITAL
         return "ok";
     }
 
