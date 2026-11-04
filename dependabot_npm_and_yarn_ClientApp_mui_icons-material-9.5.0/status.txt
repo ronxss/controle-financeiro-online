@@ -1,4 +1,4 @@
-commit=616c5dfa86026a5aff3ad1d2cfaef7e4fa4f09f3
+commit=0eaccc10488eead8f43aeb39e9340a06577b44b4
 build=failure
 contrato=failure
-run=https://github.com/ronxss/controle-financeiro-online/actions/runs/41917228970
+run=https://github.com/ronxss/controle-financeiro-online/actions/runs/41917240541
