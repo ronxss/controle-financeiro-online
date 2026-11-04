@@ -1,0 +1,4 @@
+commit=00acb520c70f2c97540d99084820e4e4dc724d12
+build=cancelled
+contrato=cancelled
+run=https://github.com/ronxss/controle-financeiro-online/actions/runs/41936406810
