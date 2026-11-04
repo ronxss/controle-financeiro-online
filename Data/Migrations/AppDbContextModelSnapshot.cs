@@ -324,6 +324,9 @@ namespace ControleFinanceiro.Data.Migrations
                     b.Property<int>("LembretesHora")
                         .HasColumnType("int");
 
+                    b.Property<string>("PainelJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("UltimoBackup")
                         .HasColumnType("datetime2");
 
