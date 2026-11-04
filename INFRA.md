@@ -67,6 +67,19 @@ Qualquer SMTP serve. O mais simples sem custo é o **Brevo** (300 e-mails por di
 3. Use `emailHost=smtp-relay.brevo.com`, `emailUsuario=<login>`, `emailSenha=<chave>` e `emailRemetente=<e-mail verificado>` no passo 2.
    Ou, sem reimplantar: App Service → **Configuração** → edite `Email__Host`, `Email__Usuario`, `Email__Senha` e `Email__Remetente`.
 
+Na tela **Variáveis de ambiente** do App Service (antes chamada "Configuração"), aba *Configurações do aplicativo*.
+
+**Se o e-mail não chegar**, abra App Service → Monitoramento → **Fluxo de log**, peça o link de novo e procure "Falha ao enviar e-mail":
+
+| Erro no log | Causa | O que fazer |
+|---|---|---|
+| `5.7.1 Unauthorized IP address` | O Brevo só aceita IPs autorizados (padrão em contas novas) | Brevo → Segurança → **IPs autorizados**: adicione os *Endereços IP de saída adicionais* do App Service (em Propriedades), ou clique em "Autorizar" no e-mail de aviso do Brevo |
+| `4.0.0 Invalid from` | `Email__Remetente` não é um remetente verificado | Brevo → Remetentes → adicione e verifique o e-mail; em `Email__Remetente` use esse e-mail (não o login `@smtp-brevo.com`) |
+| `535 Authentication failed` | Login ou chave SMTP errados | Confira `Email__Usuario` (login SMTP) e `Email__Senha` (chave SMTP, não a senha da conta Brevo) |
+| `E-mail não configurado` | `Email__Host` vazio | Preencha as variáveis `Email__*` |
+
+Remetente com Gmail/Hotmail funciona, mas pode cair no spam; com domínio próprio verificado no Brevo a entrega é melhor.
+
 Como funciona: o link vale **1 hora**, só pode ser usado **uma vez** e deixa de valer se a senha mudar. A tela sempre responde a mesma coisa, exista ou não a conta, e o e-mail sai em segundo plano, para ninguém descobrir quem tem cadastro. O link usa sempre o endereço configurado (`App__UrlPublica`), nunca o que veio na requisição.
 
 ## 5. Levar os dados do app local (celular) para o online
