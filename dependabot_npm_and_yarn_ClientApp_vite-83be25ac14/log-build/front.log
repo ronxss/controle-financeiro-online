@@ -1,0 +1,308 @@
+
+added 201 packages, and audited 202 packages in 18s
+
+found 0 vulnerabilities
+found 0 vulnerabilities
+
+> controle-financeiro-client@1.0.0 test
+> node --test "src/**/*.test.js"
+
+✔ estado inicial traz as listas da planilha (3.150883ms)
+✔ GET /api/categorias: ordena por tipo e nome e usa limiteMensal em reais (10.503579ms)
+✔ lançamento: cria, lista no formato da API e devolve só o id no POST (1.465888ms)
+✔ lançamento: aplica as mesmas validações e mensagens da API (1.340441ms)
+✔ lançamento: valores são exatos em centavos (sem erro de ponto flutuante) (0.852903ms)
+✔ lançamento: editar, alternar status e excluir; ids inexistentes dão 404 (0.97825ms)
+✔ listagem: filtros, busca sem diferenciar maiúsculas e ordem por data e id decrescentes (0.978701ms)
+✔ mês inválido gera o mesmo erro da API (0.409101ms)
+✔ resumo: separa realizado de pendente e calcula os saldos (0.573837ms)
+✔ orçamento: limite, realizado, disponível e percentual; salvar limites (4.504804ms)
+✔ categorias: duplicadas (sem diferenciar maiúsculas), tipo e limite (0.970528ms)
+✔ categorias: não troca o tipo nem exclui quando há lançamentos (0.317534ms)
+✔ contas: CRUD com as mesmas regras e mensagens (0.467578ms)
+✔ ids nunca são reaproveitados depois de excluir (0.135432ms)
+✔ rotas desconhecidas devolvem 404 como a API (0.165086ms)
+✔ alterou: leituras não pedem gravação; escritas pedem (0.293398ms)
+✔ backup: ida e volta preserva tudo; arquivos adulterados são recusados (1.600269ms)
+✔ backup: contadores nunca ficam atrás dos ids existentes (0.324895ms)
+✔ hojeISO usa a data local (0.155021ms)
+✔ fixa: nasce falsa, pode ser criada como fixa e aparece na listagem (0.306898ms)
+✔ fixa: receitas também podem ser fixas; valor precisa ser booleano (0.260639ms)
+✔ fixa: editar sem mandar o campo preserva; mandar muda; trocar o tipo mantém (0.23464ms)
+✔ fixa: PATCH alterna (despesa e receita), valida e respeita ids inexistentes (0.350904ms)
+✔ fixa: filtro da listagem (true/false) e valor inválido (0.255431ms)
+✔ somarMeses e diasNoMes: viradas de ano e anos bissextos (0.140119ms)
+✔ copiar fixas: cria receitas e despesas fixas no mês seguinte, pendentes, mesmo dia; ignora as variáveis (0.574137ms)
+✔ copiar fixas: não duplica ao repetir a ação, nem o que já existe no mês (0.292196ms)
+✔ copiar fixas: despesas repetidas na origem são todas copiadas (conta por quantidade) (0.371205ms)
+✔ copiar fixas: dia 31 vira o último dia do mês menor; virada de ano; origem explícita (0.282762ms)
+✔ copiar fixas: sem fixas na origem, mês igual e mês inválido (0.328411ms)
+✔ copiar fixas: sem corpo usa o mês atual; ids continuam únicos (0.209283ms)
+✔ painel: totais de despesas, receitas, fixas e variáveis (1.958894ms)
+✔ painel: orçamento total, situação por categoria e ordem (pior primeiro) (0.565444ms)
+✔ painel: limites exatos nos cortes (80% é alerta, 100% é ok, acima é estourado) (1.122426ms)
+✔ painel: comparação com o mês anterior (0.639695ms)
+✔ painel: comparação atravessa a virada de ano (0.207409ms)
+✔ painel: ritmo e projeção só no mês em andamento (1.006873ms)
+✔ painel: evolução tem 6 meses terminando no mês pedido, com realizado de receitas e despesas (0.506166ms)
+✔ painel: maiores despesas (até 5, valor decrescente, inclui pendentes e marca as fixas) (0.570782ms)
+✔ painel: mês vazio, mês inválido, método errado e padrão = mês atual (0.294079ms)
+✔ painel: valores em centavos exatos (sem erro de ponto flutuante) (0.18774ms)
+✔ dados antigos sem o campo "fixa" continuam válidos e contam como não fixa (0.762819ms)
+✔ backup preserva "fixa" de despesas e receitas; valor que não é booleano vira não fixo (0.371825ms)
+✔ receitas fixas: filtro "só fixas" traz receitas e despesas fixas (0.2878ms)
+✔ receitas fixas: copiar não confunde receita e despesa com a mesma descrição (0.236453ms)
+✔ receitas fixas: novo endereço /api/lancamentos-fixos/copiar faz o mesmo que o antigo (0.349101ms)
+✔ painel: receitas fixas, saldo fixo e comprometimento (0.380668ms)
+✔ painel: sem receitas fixas, comprometimento é null (não divide por zero) (0.344214ms)
+✔ grava cópia em Documentos e abre o compartilhamento com o arquivo do cache (1.904302ms)
+✔ fechar a folha de compartilhamento não é erro: a cópia em Documentos continua valendo (0.378946ms)
+✔ sem permissão em Documentos (Android antigo): usa só o compartilhamento (0.24117ms)
+✔ sem permissão e compartilhamento cancelado: não salvou nada, sem erro (0.301711ms)
+✔ compartilhamento com erro de verdade: lança só se também não salvou em Documentos (0.89822ms)
+✔ config: padrão, leitura e alteração parcial (2.037892ms)
+✔ config: rejeita valores inválidos e não deixa editar as datas de backup (0.862317ms)
+✔ config: dados e backups antigos (sem config) ganham o padrão; valores ruins viram padrão (1.705846ms)
+✔ config viaja no backup (0.354449ms)
+✔ registrar backup: manual e automático guardam instantes separados (0.406527ms)
+✔ lembretes: atrasados, próximos dias e o que fica de fora (3.084704ms)
+✔ lembretes: aviso de backup só quando há lançamentos e o último foi há 7+ dias (0.45577ms)
+✔ diasEntre atravessa meses, anos e horário de verão (0.150615ms)
+✔ notificações: desligadas não agendam nada (0.327128ms)
+✔ notificações: aviso antecipado e no dia, na hora escolhida, só pendentes futuros (2.615714ms)
+✔ notificações: "amanhã", sem detalhes, e mesmo dia já passado da hora (0.423162ms)
+✔ notificações: antecedência zero e limite de quantidade (os mais próximos) (0.674647ms)
+✔ reagendar: cancela os antigos e agenda os novos; lista vazia só cancela (0.456061ms)
+✔ permissão: já concedida, perguntar, negada (0.257154ms)
+✔ backup automático: desligado, sem dados, primeira vez, intervalo de 7 dias (0.277113ms)
+✔ backup automático: grava backup válido e mantém só os 4 mais recentes, sem tocar nos manuais (0.710341ms)
+✔ backup automático: o arquivo gravado pode ser importado; falha ao limpar não invalida (0.62288ms)
+✔ metas: criar, listar e calcular quanto guardar por mês (2.747441ms)
+✔ metas: depósitos, retiradas, progresso e conclusão (0.664512ms)
+✔ metas: retirada maior que o guardado e outras validações (1.401712ms)
+✔ metas: editar, excluir e excluir depósito (sem deixar saldo negativo) (0.927104ms)
+✔ metas: ritmo, atraso e ordem da lista (9.911585ms)
+✔ metas: sugestão mensal arredonda para cima (não falta 1 centavo no fim) (0.208671ms)
+✔ metas viajam no backup; backup antigo sem metas é válido; lixo é recusado (1.998523ms)
+✔ CSV: cabeçalho, formato brasileiro, sinal do valor, BOM e CRLF (1.280732ms)
+✔ CSV: aspas, ponto e vírgula, quebra de linha e proteção contra fórmulas (0.619995ms)
+✔ CSV: período, parcela e fatura do cartão (1.216907ms)
+✔ parcelas: divide o total em centavos exatos, um por mês, 1ª com o status escolhido (2.69993ms)
+✔ parcelas: dia 31 vira o último dia dos meses menores; à vista continua igual (0.487088ms)
+✔ parcelas: validações (1.859796ms)
+✔ parcelas: editar mexe só naquela parcela e não deixa virar fixa (0.453918ms)
+✔ parcelas: excluir uma, a partir dela ou todas (0.674377ms)
+✔ parcelas e cartão sobrevivem ao backup; lixo vira "não tem" (1.137809ms)
+✔ contas: cartão com fechamento e vencimento; PUT sem o campo mantém; null tira (1.101955ms)
+✔ fatura: compra até o fechamento entra no mês; depois, no seguinte; vencimento depois do fechamento (0.225847ms)
+✔ fatura: vencimento antes do fechamento cai no mês seguinte; dias 29-31 em fevereiro (0.249332ms)
+✔ fatura do mês: período de compras coberto (0.432145ms)
+✔ faturas: lista por mês de vencimento, total, estorno e situação (0.651622ms)
+✔ faturas: situações aberta, fechada, vencida, paga e vazia (0.519275ms)
+✔ pagar fatura: marca só as pendentes daquela fatura e daquele cartão (0.660946ms)
+✔ lançamento no cartão informa a fatura; parcelas caem em faturas seguidas (0.439356ms)
+✔ vencimentos: compras no cartão viram a fatura, pelo vencimento dela (0.691071ms)
+✔ vencimentos: fatura só com estorno não aparece; notificação usa o vencimento da fatura (0.886844ms)
+✔ notificações: faturas de meses e cartões diferentes e lançamentos comuns nunca repetem id (1.258739ms)
+✔ criar conta devolve sessão com dados iniciais e registra o usuário (11.872391ms)
+✔ entrar com a senha certa recupera exatamente os dados salvos (189.32258ms)
+✔ senha errada e usuário inexistente dão a MESMA mensagem (não revela quem existe) (3.79157ms)
+✔ nome repetido é recusado, ignorando maiúsculas, acentos de composição e espaços (1.011249ms)
+✔ valida nome e senha (0.440047ms)
+✔ nada legível fica gravado: os dados e a senha estão cifrados (1.650373ms)
+✔ cada gravação usa um IV diferente (1.370415ms)
+✔ contas são isoladas: dados de uma não aparecem na outra (3.293096ms)
+✔ blocos cifrados são presos ao id da conta: copiar tudo da conta A para a B não abre (1.789852ms)
+✔ dado adulterado no disco é detectado (não abre com lixo) (1.492428ms)
+✔ alterar senha: a antiga para de funcionar, a nova abre os mesmos dados (4.558113ms)
+✔ excluir remove a conta e os dados, e libera o nome (1.59473ms)
+✔ a primeira conta adota os dados antigos (sem senha); a segunda começa limpa (1.777513ms)
+✔ dados antigos inválidos não são adotados nem apagados (0.760966ms)
+✔ conta sem arquivo de dados abre com dados iniciais (1.116186ms)
+ℹ tests 112
+ℹ suites 0
+ℹ pass 112
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 405.024514
+
+> controle-financeiro-client@1.0.0 build
+> vite build
+
+[36mvite v8.3.5 [32mbuilding client environment for production...[36m[39m
+transforming...
+✓ 987 modules transformed.
+rendering chunks...
+computing gzip size...
+../wwwroot/index.html                                              1.15 kB │ gzip:   0.54 kB
+../wwwroot/assets/roboto-vietnamese-400-normal-Bf76hAzZ.woff       6.08 kB
+../wwwroot/assets/roboto-vietnamese-700-normal-kpkdMgbf.woff       6.10 kB
+../wwwroot/assets/roboto-vietnamese-300-normal-CYjuQheQ.woff       6.12 kB
+../wwwroot/assets/roboto-vietnamese-500-normal-BgoYVz-9.woff       6.13 kB
+../wwwroot/assets/roboto-greek-400-normal-D904r64h.woff            7.42 kB
+../wwwroot/assets/roboto-greek-300-normal-xS8CB6LN.woff            7.44 kB
+../wwwroot/assets/roboto-greek-700-normal-xQsEWSIA.woff            7.45 kB
+../wwwroot/assets/roboto-greek-500-normal-XBIQOowA.woff            7.47 kB
+../wwwroot/assets/roboto-vietnamese-400-normal-D2PTxGxD.woff2      8.36 kB
+../wwwroot/assets/roboto-vietnamese-300-normal-BPvXm_f1.woff2      8.37 kB
+../wwwroot/assets/roboto-vietnamese-700-normal-BEVeWqJt.woff2      8.41 kB
+../wwwroot/assets/roboto-vietnamese-500-normal-B3ncpOoB.woff2      8.54 kB
+../wwwroot/assets/roboto-symbols-500-normal-DFnofPUt.woff          8.73 kB
+../wwwroot/assets/roboto-symbols-400-normal-C7tGlxgb.woff          8.75 kB
+../wwwroot/assets/roboto-symbols-700-normal-C59U6HqI.woff          8.77 kB
+../wwwroot/assets/roboto-symbols-300-normal-CBIeSvs3.woff          8.83 kB
+../wwwroot/assets/roboto-greek-300-normal-DJEM9B4Z.woff2           9.50 kB
+../wwwroot/assets/roboto-greek-400-normal-ai2Z1K3C.woff2           9.55 kB
+../wwwroot/assets/roboto-greek-500-normal-C9AnhcmC.woff2           9.61 kB
+../wwwroot/assets/roboto-greek-700-normal-0aHWxGLu.woff2           9.63 kB
+../wwwroot/assets/roboto-cyrillic-400-normal-BepgbcUK.woff        10.20 kB
+../wwwroot/assets/roboto-cyrillic-300-normal-D0x1uCa7.woff        10.26 kB
+../wwwroot/assets/roboto-cyrillic-500-normal-C8ZOEKN4.woff        10.39 kB
+../wwwroot/assets/roboto-cyrillic-700-normal-D8g9KsRf.woff        10.39 kB
+../wwwroot/assets/roboto-symbols-300-normal-DDU7avhj.woff2        10.70 kB
+../wwwroot/assets/roboto-symbols-400-normal-CB1Ce4Gk.woff2        10.73 kB
+../wwwroot/assets/roboto-symbols-500-normal-B_CZKVJS.woff2        10.83 kB
+../wwwroot/assets/roboto-symbols-700-normal-BiFDindJ.woff2        10.86 kB
+../wwwroot/assets/roboto-cyrillic-400-normal-CBPI_iaY.woff2       12.10 kB
+../wwwroot/assets/roboto-cyrillic-300-normal-DzUz0kzv.woff2       12.26 kB
+../wwwroot/assets/roboto-cyrillic-500-normal-CLao9AfR.woff2       12.35 kB
+../wwwroot/assets/roboto-cyrillic-700-normal-C2o7G-SM.woff2       12.41 kB
+../wwwroot/assets/roboto-latin-ext-400-normal-CIveymTr.woff       13.83 kB
+../wwwroot/assets/roboto-latin-ext-700-normal-BDePAh3g.woff       13.83 kB
+../wwwroot/assets/roboto-latin-ext-500-normal-C1cK9xmS.woff       13.91 kB
+../wwwroot/assets/roboto-latin-ext-300-normal-B0-sTZUp.woff       13.95 kB
+../wwwroot/assets/roboto-latin-ext-300-normal-B90pq-BC.woff2      15.01 kB
+../wwwroot/assets/roboto-latin-ext-400-normal-C3tdtHj3.woff2      15.04 kB
+../wwwroot/assets/roboto-latin-ext-500-normal-pMCM9Ixg.woff2      15.16 kB
+../wwwroot/assets/roboto-latin-ext-700-normal-DSBUz0N1.woff2      15.19 kB
+../wwwroot/assets/roboto-cyrillic-ext-300-normal-C0UYUNTV.woff    15.95 kB
+../wwwroot/assets/roboto-cyrillic-ext-400-normal-DhDk0Xwi.woff    15.95 kB
+../wwwroot/assets/roboto-cyrillic-ext-500-normal-SCgicl0l.woff    16.09 kB
+../wwwroot/assets/roboto-cyrillic-ext-700-normal-BWOtdzfy.woff    16.09 kB
+../wwwroot/assets/roboto-cyrillic-ext-400-normal-qHufge6k.woff2   17.37 kB
+../wwwroot/assets/roboto-cyrillic-ext-300-normal-DIxttMbC.woff2   17.49 kB
+../wwwroot/assets/roboto-cyrillic-ext-500-normal-BWC_xYeb.woff2   17.59 kB
+../wwwroot/assets/roboto-cyrillic-ext-700-normal-DmFxo5wj.woff2   17.62 kB
+../wwwroot/assets/roboto-math-400-normal-D6sS4O5l.woff            18.76 kB
+../wwwroot/assets/roboto-math-500-normal-BNGXE_xU.woff            18.84 kB
+../wwwroot/assets/roboto-math-700-normal-DbhUef31.woff            18.89 kB
+../wwwroot/assets/roboto-math-300-normal-CkwMvXpj.woff            18.94 kB
+../wwwroot/assets/roboto-math-400-normal-BEFej5gc.woff2           20.08 kB
+../wwwroot/assets/roboto-math-300-normal-5dF_7mZP.woff2           20.09 kB
+../wwwroot/assets/roboto-math-500-normal-C4NU9gLX.woff2           20.30 kB
+../wwwroot/assets/roboto-math-700-normal-B8YqGHVc.woff2           20.39 kB
+../wwwroot/assets/roboto-latin-400-normal-D27F5sTu.woff           21.06 kB
+../wwwroot/assets/roboto-latin-500-normal-fsTFPL3E.woff           21.16 kB
+../wwwroot/assets/roboto-latin-700-normal-YuyVweIx.woff           21.21 kB
+../wwwroot/assets/roboto-latin-300-normal-Dqn3NW0Y.woff           21.35 kB
+../wwwroot/assets/roboto-latin-400-normal-BqEyEoaF.woff2          21.88 kB
+../wwwroot/assets/roboto-latin-300-normal-CCzlftfr.woff2          22.07 kB
+../wwwroot/assets/roboto-latin-500-normal-7RbcRiD8.woff2          22.20 kB
+../wwwroot/assets/roboto-latin-700-normal-BZpUvMxY.woff2          22.24 kB
+../wwwroot/assets/index-BsxGTdsB.css                              46.53 kB │ gzip:  21.94 kB
+../wwwroot/assets/esm-CdqrS2TW.js                                  0.33 kB │ gzip:   0.23 kB
+../wwwroot/assets/web-CT_4iA0b.js                                  0.36 kB │ gzip:   0.25 kB
+../wwwroot/assets/esm-wk--pAB6.js                                  0.57 kB │ gzip:   0.34 kB
+../wwwroot/assets/esm-DQLHb7_M.js                                  1.35 kB │ gzip:   0.70 kB
+../wwwroot/assets/web-CdRwBStg.js                                  3.33 kB │ gzip:   1.04 kB
+../wwwroot/assets/web-CiZhUK49.js                                  8.47 kB │ gzip:   2.83 kB
+../wwwroot/assets/index-Cx8ADI31.js                              721.39 kB │ gzip: 216.73 kB
+
+[33m[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 461ms[39m
+
+> controle-financeiro-client@1.0.0 build:mobile
+> vite build --mode mobile
+
+[36mvite v8.3.5 [32mbuilding client environment for mobile...[36m[39m
+transforming...
+✓ 987 modules transformed.
+rendering chunks...
+computing gzip size...
+dist-local/index.html                                              1.15 kB │ gzip:   0.55 kB
+dist-local/sw.js                                                   3.50 kB
+dist-local/assets/roboto-vietnamese-400-normal-Bf76hAzZ.woff       6.08 kB
+dist-local/assets/roboto-vietnamese-700-normal-kpkdMgbf.woff       6.10 kB
+dist-local/assets/roboto-vietnamese-300-normal-CYjuQheQ.woff       6.12 kB
+dist-local/assets/roboto-vietnamese-500-normal-BgoYVz-9.woff       6.13 kB
+dist-local/assets/roboto-greek-400-normal-D904r64h.woff            7.42 kB
+dist-local/assets/roboto-greek-300-normal-xS8CB6LN.woff            7.44 kB
+dist-local/assets/roboto-greek-700-normal-xQsEWSIA.woff            7.45 kB
+dist-local/assets/roboto-greek-500-normal-XBIQOowA.woff            7.47 kB
+dist-local/assets/roboto-vietnamese-400-normal-D2PTxGxD.woff2      8.36 kB
+dist-local/assets/roboto-vietnamese-300-normal-BPvXm_f1.woff2      8.37 kB
+dist-local/assets/roboto-vietnamese-700-normal-BEVeWqJt.woff2      8.41 kB
+dist-local/assets/roboto-vietnamese-500-normal-B3ncpOoB.woff2      8.54 kB
+dist-local/assets/roboto-symbols-500-normal-DFnofPUt.woff          8.73 kB
+dist-local/assets/roboto-symbols-400-normal-C7tGlxgb.woff          8.75 kB
+dist-local/assets/roboto-symbols-700-normal-C59U6HqI.woff          8.77 kB
+dist-local/assets/roboto-symbols-300-normal-CBIeSvs3.woff          8.83 kB
+dist-local/assets/roboto-greek-300-normal-DJEM9B4Z.woff2           9.50 kB
+dist-local/assets/roboto-greek-400-normal-ai2Z1K3C.woff2           9.55 kB
+dist-local/assets/roboto-greek-500-normal-C9AnhcmC.woff2           9.61 kB
+dist-local/assets/roboto-greek-700-normal-0aHWxGLu.woff2           9.63 kB
+dist-local/assets/roboto-cyrillic-400-normal-BepgbcUK.woff        10.20 kB
+dist-local/assets/roboto-cyrillic-300-normal-D0x1uCa7.woff        10.26 kB
+dist-local/assets/roboto-cyrillic-500-normal-C8ZOEKN4.woff        10.39 kB
+dist-local/assets/roboto-cyrillic-700-normal-D8g9KsRf.woff        10.39 kB
+dist-local/assets/roboto-symbols-300-normal-DDU7avhj.woff2        10.70 kB
+dist-local/assets/roboto-symbols-400-normal-CB1Ce4Gk.woff2        10.73 kB
+dist-local/assets/roboto-symbols-500-normal-B_CZKVJS.woff2        10.83 kB
+dist-local/assets/roboto-symbols-700-normal-BiFDindJ.woff2        10.86 kB
+dist-local/assets/roboto-cyrillic-400-normal-CBPI_iaY.woff2       12.10 kB
+dist-local/assets/roboto-cyrillic-300-normal-DzUz0kzv.woff2       12.26 kB
+dist-local/assets/roboto-cyrillic-500-normal-CLao9AfR.woff2       12.35 kB
+dist-local/assets/roboto-cyrillic-700-normal-C2o7G-SM.woff2       12.41 kB
+dist-local/assets/roboto-latin-ext-400-normal-CIveymTr.woff       13.83 kB
+dist-local/assets/roboto-latin-ext-700-normal-BDePAh3g.woff       13.83 kB
+dist-local/assets/roboto-latin-ext-500-normal-C1cK9xmS.woff       13.91 kB
+dist-local/assets/roboto-latin-ext-300-normal-B0-sTZUp.woff       13.95 kB
+dist-local/assets/roboto-latin-ext-300-normal-B90pq-BC.woff2      15.01 kB
+dist-local/assets/roboto-latin-ext-400-normal-C3tdtHj3.woff2      15.04 kB
+dist-local/assets/roboto-latin-ext-500-normal-pMCM9Ixg.woff2      15.16 kB
+dist-local/assets/roboto-latin-ext-700-normal-DSBUz0N1.woff2      15.19 kB
+dist-local/assets/roboto-cyrillic-ext-300-normal-C0UYUNTV.woff    15.95 kB
+dist-local/assets/roboto-cyrillic-ext-400-normal-DhDk0Xwi.woff    15.95 kB
+dist-local/assets/roboto-cyrillic-ext-500-normal-SCgicl0l.woff    16.09 kB
+dist-local/assets/roboto-cyrillic-ext-700-normal-BWOtdzfy.woff    16.09 kB
+dist-local/assets/roboto-cyrillic-ext-400-normal-qHufge6k.woff2   17.37 kB
+dist-local/assets/roboto-cyrillic-ext-300-normal-DIxttMbC.woff2   17.49 kB
+dist-local/assets/roboto-cyrillic-ext-500-normal-BWC_xYeb.woff2   17.59 kB
+dist-local/assets/roboto-cyrillic-ext-700-normal-DmFxo5wj.woff2   17.62 kB
+dist-local/assets/roboto-math-400-normal-D6sS4O5l.woff            18.76 kB
+dist-local/assets/roboto-math-500-normal-BNGXE_xU.woff            18.84 kB
+dist-local/assets/roboto-math-700-normal-DbhUef31.woff            18.89 kB
+dist-local/assets/roboto-math-300-normal-CkwMvXpj.woff            18.94 kB
+dist-local/assets/roboto-math-400-normal-BEFej5gc.woff2           20.08 kB
+dist-local/assets/roboto-math-300-normal-5dF_7mZP.woff2           20.09 kB
+dist-local/assets/roboto-math-500-normal-C4NU9gLX.woff2           20.30 kB
+dist-local/assets/roboto-math-700-normal-B8YqGHVc.woff2           20.39 kB
+dist-local/assets/roboto-latin-400-normal-D27F5sTu.woff           21.06 kB
+dist-local/assets/roboto-latin-500-normal-fsTFPL3E.woff           21.16 kB
+dist-local/assets/roboto-latin-700-normal-YuyVweIx.woff           21.21 kB
+dist-local/assets/roboto-latin-300-normal-Dqn3NW0Y.woff           21.35 kB
+dist-local/assets/roboto-latin-400-normal-BqEyEoaF.woff2          21.88 kB
+dist-local/assets/roboto-latin-300-normal-CCzlftfr.woff2          22.07 kB
+dist-local/assets/roboto-latin-500-normal-7RbcRiD8.woff2          22.20 kB
+dist-local/assets/roboto-latin-700-normal-BZpUvMxY.woff2          22.24 kB
+dist-local/assets/index-Gk2HJJmQ.css                              46.14 kB │ gzip:  21.94 kB
+dist-local/assets/esm-BrZB4wRd.js                                  0.33 kB │ gzip:   0.24 kB
+dist-local/assets/web-CcPYHsbg.js                                  0.36 kB │ gzip:   0.25 kB
+dist-local/assets/esm-BX7xpPav.js                                  0.57 kB │ gzip:   0.34 kB
+dist-local/assets/esm-Dh5ThgiJ.js                                  1.35 kB │ gzip:   0.71 kB
+dist-local/assets/web-B0yBGB3D.js                                  3.33 kB │ gzip:   1.04 kB
+dist-local/assets/web-CWII1Qxt.js                                  8.47 kB │ gzip:   2.83 kB
+dist-local/assets/index-VTKDjt4L.js                              751.17 kB │ gzip: 225.23 kB
+
+[33m[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 312ms[39m
