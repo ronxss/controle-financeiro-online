@@ -54,11 +54,18 @@ jobs:
           dotnet list package --vulnerable --include-transitive 2>&1 | tee "$RUNNER_TEMP/vulnerabilidades.log"
           ! grep -q "has the following vulnerable packages" "$RUNNER_TEMP/vulnerabilidades.log"
 
+      # Em branches de trabalho, guarda também o app local compilado (vai para ci-resultados), para conferir a tela antes de publicar.
+      - name: Empacota o app local para conferência
+        if: github.ref != 'refs/heads/main'
+        run: tar -czf "$RUNNER_TEMP/dist-local.tgz" -C ClientApp dist-local || true
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: log-build
-          path: ${{ runner.temp }}/*.log
+          path: |
+            ${{ runner.temp }}/*.log
+            ${{ runner.temp }}/dist-local.tgz
           if-no-files-found: ignore
 
   # Sobe o servidor com um SQL Server de verdade e confere que ele responde igual ao motor do app local.
