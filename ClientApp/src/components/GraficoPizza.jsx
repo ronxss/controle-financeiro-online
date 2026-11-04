@@ -89,7 +89,7 @@ export default function GraficoPizza({ fatias, rosca = false, titulo, rotuloTota
         </svg>
       </Box>
 
-      <Stack spacing={0.75} sx={{ width: '100%', minWidth: 0 }} onMouseLeave={() => setAtivo(null)}>
+      <Stack spacing={0.75} sx={{ width: '100%', maxWidth: 440, minWidth: 0 }} onMouseLeave={() => setAtivo(null)}>
         {fatiasSvg.map((f) => (
           <Stack
             key={f.rotulo} direction="row" spacing={1} alignItems="center" onMouseEnter={() => setAtivo(f.i)}
