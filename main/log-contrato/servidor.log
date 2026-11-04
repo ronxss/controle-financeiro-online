@@ -1,7 +1,11 @@
+info: Microsoft.EntityFrameworkCore.Migrations[20411]
+      Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+info: Microsoft.EntityFrameworkCore.Migrations[20402]
+      Applying migration '20261104213701_Inicial'.
 warn: Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware[16]
       The WebRootPath was not found: /home/runner/work/controle-financeiro-online/controle-financeiro-online/wwwroot. Static files may be unavailable.
 warn: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager[35]
-      No XML encryptor configured. Key {dea25ce4-ec9d-46d1-b88b-7ce6374701ff} may be persisted to storage in unencrypted form.
+      No XML encryptor configured. Key {ed5d46c8-0169-4029-b2c1-fb70c19f46d1} may be persisted to storage in unencrypted form.
 warn: Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware[16]
       The WebRootPath was not found: /home/runner/work/controle-financeiro-online/controle-financeiro-online/wwwroot. Static files may be unavailable.
 info: Microsoft.Hosting.Lifetime[14]
