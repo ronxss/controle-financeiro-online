@@ -298,6 +298,7 @@ public static class Calculos
     {
         lembretes = new { ativo = p.LembretesAtivo, diasAntes = p.LembretesDiasAntes, hora = p.LembretesHora, detalhes = p.LembretesDetalhes },
         backup = new { automatico = p.BackupAutomatico, ultimo = Instante(p.UltimoBackup), ultimoAutomatico = Instante(p.UltimoBackupAutomatico) },
+        painel = PainelResposta(LerPainel(p.PainelJson)),
     };
 
     public static string? Instante(DateTime? utc) =>

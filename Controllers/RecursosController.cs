@@ -5,6 +5,7 @@ using ControleFinanceiro.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using static ControleFinanceiro.Services.Regras;
 
 namespace ControleFinanceiro.Controllers;
@@ -209,6 +210,12 @@ public class PreferenciasController(AppDbContext db, Relogio relogio) : ApiBase
         if (l?.Hora is int h && h is < 0 or > 23) return Erro("Valor inválido para \"hora\".");
 
         var p = await PrefsAsync();
+        if (req?.Painel is JsonElement painel && painel.ValueKind != JsonValueKind.Undefined)
+        {
+            var atual = LerPainel(p.PainelJson);
+            if (AplicarPainel(atual, painel) is string erro) return Erro(erro);
+            p.PainelJson = GravarPainel(atual);
+        }
         if (l?.Ativo is bool a) p.LembretesAtivo = a;
         if (l?.DiasAntes is int dd) p.LembretesDiasAntes = dd;
         if (l?.Hora is int hh) p.LembretesHora = hh;

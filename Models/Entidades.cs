@@ -95,4 +95,6 @@ public class PreferenciasUsuario
     public bool BackupAutomatico { get; set; }
     public DateTime? UltimoBackup { get; set; }
     public DateTime? UltimoBackupAutomatico { get; set; }
+    /// <summary>Preferências do painel (seções visíveis e tipo de gráfico), em JSON. Null = padrão.</summary>
+    public string? PainelJson { get; set; }
 }

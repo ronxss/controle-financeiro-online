@@ -54,10 +54,35 @@ export function criarEstadoInicial() {
 export const ANTECEDENCIAS = [0, 1, 2, 3, 5, 7]; // dias antes do vencimento para avisar
 export const DIAS_PARA_LEMBRAR_BACKUP = 7;
 
+// Seções do painel (tela Resumo) e os tipos de gráfico que cada uma aceita. O primeiro é o padrão.
+export const SECOES_PAINEL = Object.freeze({
+  indicadores: ['cartoes'],
+  despesasCategoria: ['barras', 'pizza', 'rosca'],
+  orcamento: ['barras'],
+  fixas: ['barras', 'pizza', 'rosca'],
+  fixasVariaveis: ['barras', 'pizza', 'rosca'],
+  evolucao: ['barras', 'linhas'],
+  ritmo: ['lista'],
+  maioresDespesas: ['lista', 'barras'],
+});
+
+export function painelPadrao() {
+  return Object.fromEntries(Object.entries(SECOES_PAINEL).map(([id, tipos]) => [id, { visivel: true, tipo: tipos[0] }]));
+}
+
+/** Preferências do painel lidas com tolerância: seção desconhecida é ignorada; valor errado volta ao padrão. */
+function normalizarPainel(p) {
+  return Object.fromEntries(Object.entries(SECOES_PAINEL).map(([id, tipos]) => {
+    const s = p?.[id] ?? {};
+    return [id, { visivel: typeof s.visivel === 'boolean' ? s.visivel : true, tipo: tipos.includes(s.tipo) ? s.tipo : tipos[0] }];
+  }));
+}
+
 export function configPadrao() {
   return {
     lembretes: { ativo: false, diasAntes: 1, hora: 9, detalhes: true },
     backup: { automatico: false, ultimo: null, ultimoAutomatico: null },
+    painel: painelPadrao(),
   };
 }
 
@@ -81,6 +106,7 @@ function normalizarConfig(c) {
       ultimo: instanteValido(b.ultimo) ? b.ultimo : null,
       ultimoAutomatico: instanteValido(b.ultimoAutomatico) ? b.ultimoAutomatico : null,
     },
+    painel: normalizarPainel(c?.painel),
   };
 }
 
@@ -1010,6 +1036,7 @@ function config(estado, metodo, corpo) {
   if (metodo !== 'PUT') return null;
 
   const c = corpo ?? {};
+  estado.config = { ...estado.config, painel: normalizarPainel(estado.config.painel) }; // estado de versão anterior ou incompleto
   const atual = estado.config;
   const novo = structuredClone(atual);
   const invalido = (campo) => new ErroLocal(`Valor inválido para "${campo}".`, 400);
@@ -1026,6 +1053,20 @@ function config(estado, metodo, corpo) {
     if (!b || typeof b !== 'object') throw invalido('backup');
     // As datas do último backup não são editáveis aqui: só /api/backup/registrar as muda.
     if (b.automatico !== undefined) { if (typeof b.automatico !== 'boolean') throw invalido('automatico'); novo.backup.automatico = b.automatico; }
+  }
+  if (c.painel !== undefined) {
+    // Alteração parcial: só as seções (e campos) enviados mudam.
+    if (!c.painel || typeof c.painel !== 'object' || Array.isArray(c.painel)) throw invalido('painel');
+    for (const [id, sec] of Object.entries(c.painel)) {
+      const tipos = SECOES_PAINEL[id];
+      if (!tipos || !sec || typeof sec !== 'object' || Array.isArray(sec)) throw invalido(`painel.${id}`);
+      if (sec.visivel !== undefined && typeof sec.visivel !== 'boolean') throw invalido(`painel.${id}.visivel`);
+      if (sec.tipo !== undefined && !tipos.includes(sec.tipo)) throw invalido(`painel.${id}.tipo`);
+    }
+    for (const [id, sec] of Object.entries(c.painel)) {
+      if (sec.visivel !== undefined) novo.painel[id].visivel = sec.visivel;
+      if (sec.tipo !== undefined) novo.painel[id].tipo = sec.tipo;
+    }
   }
   estado.config = novo;
   return { status: 200, corpo: structuredClone(novo), alterou: JSON.stringify(novo) !== JSON.stringify(atual) };

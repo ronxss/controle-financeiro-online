@@ -311,6 +311,20 @@ const cenarios = {
     await p('GET', '/api/lembretes');
     await p('GET', '/api/config');
   },
+
+  async 'painel: tipos de gráfico e seções visíveis'({ p }) {
+    await p('GET', '/api/config');
+    await p('PUT', '/api/config', { painel: { despesasCategoria: { tipo: 'rosca' }, ritmo: { visivel: false } } });
+    await p('PUT', '/api/config', { painel: { despesasCategoria: { visivel: false }, evolucao: { tipo: 'linhas' } } });
+    await p('PUT', '/api/config', { painel: { fixas: { tipo: 'pizza' }, maioresDespesas: { tipo: 'barras' } }, lembretes: { hora: 7 } });
+    for (const ruim of ['rosca', [], null, { graficoNovo: {} }, { evolucao: 'barras' }, { evolucao: { tipo: 'pizza' } },
+      { ritmo: { tipo: 'barras' } }, { fixas: { visivel: 'nao' } }, { fixas: { tipo: 'rosca' }, orcamento: { tipo: 'x' } }]) {
+      await p('PUT', '/api/config', { painel: ruim, lembretes: { hora: 5 } });
+    }
+    await p('PUT', '/api/config', { lembretes: { hora: 24 }, painel: { fixas: { tipo: 'x' } } });
+    await p('PUT', '/api/config', { painel: {} });
+    await p('GET', '/api/config');
+  },
 };
 
 // ------------------------------------------------------------------ backup e CSV entre servidor e motor
@@ -327,6 +341,7 @@ async function testarBackupECsv() {
   await mot.pedir('POST', '/api/lancamentos', lanc(id, { descricao: '=SOMA(A1); "teste"', fixa: true }));
   await mot.pedir('POST', '/api/lancamentos', lanc(id, { tipo: 'Receita', categoriaId: id.cat['Salário'], descricao: 'Salário', valor: 5000, fixa: true }));
   await mot.pedir('PUT', '/api/config', { lembretes: { ativo: true, hora: 20 } });
+  await mot.pedir('PUT', '/api/config', { painel: { fixasVariaveis: { tipo: 'rosca' }, ritmo: { visivel: false } } });
   const meta = (await mot.pedir('POST', '/api/metas', { nome: 'Casa', alvo: 1000, prazo: dia(PROXIMO, 10) })).corpo.id;
   await mot.pedir('POST', `/api/metas/${meta}/aportes`, { valor: 10, nota: 'início' });
   const backupMotor = JSON.stringify({ app: 'controle-financeiro', exportadoEm: new Date().toISOString(), dados: mot.estado }, null, 2);

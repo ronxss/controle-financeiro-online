@@ -214,7 +214,9 @@ public class BackupController(AppDbContext db, Relogio relogio) : ApiBase
         p.LembretesHora = padrao.LembretesHora;
         p.LembretesDetalhes = padrao.LembretesDetalhes;
         p.BackupAutomatico = padrao.BackupAutomatico;
+        p.PainelJson = null;
         if (config is not { ValueKind: JsonValueKind.Object } c) return;
+        if (c.TryGetProperty("painel", out var painel)) p.PainelJson = GravarPainel(NormalizarPainel(painel));
         if (c.TryGetProperty("lembretes", out var l) && l.ValueKind == JsonValueKind.Object)
         {
             if (l.TryGetProperty("ativo", out var a) && a.ValueKind is JsonValueKind.True or JsonValueKind.False) p.LembretesAtivo = a.GetBoolean();

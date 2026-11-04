@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { criarEstadoInicial, rotear, ErroLocal, montarBackup, lerBackup, validarEstado, diasEntre, configPadrao } from './engine.js';
+import { criarEstadoInicial, rotear, ErroLocal, montarBackup, lerBackup, validarEstado, diasEntre, configPadrao, painelPadrao, SECOES_PAINEL } from './engine.js';
 import { planejarNotificacoes, reagendar, pedirPermissao } from './notificacoes.js';
 import { backupAutomaticoDevido, gravarBackupAutomatico, MANTER } from './backupAutomatico.js';
 
@@ -56,10 +56,64 @@ test('config: dados e backups antigos (sem config) ganham o padrão; valores rui
   assert.deepEqual(validarEstado(e).config, {
     lembretes: { ativo: true, diasAntes: 1, hora: 9, detalhes: false },
     backup: { automatico: false, ultimo: null, ultimoAutomatico: null },
+    painel: painelPadrao(),
   });
   e.config = { lembretes: { ativo: 'sim' }, backup: { automatico: 'sim' } };
   assert.equal(validarEstado(e).config.lembretes.ativo, false, 'texto não liga os lembretes');
   assert.equal(validarEstado(e).config.backup.automatico, false);
+});
+
+// ---------------- Painel (tipos de gráfico e seções visíveis) ----------------
+
+test('painel: padrão é tudo visível com o primeiro tipo de cada seção', () => {
+  const p = api(criarEstadoInicial(), 'GET', '/api/config').painel;
+  assert.deepEqual(Object.keys(p), Object.keys(SECOES_PAINEL));
+  for (const [id, tipos] of Object.entries(SECOES_PAINEL)) assert.deepEqual(p[id], { visivel: true, tipo: tipos[0] }, id);
+  assert.equal(p.despesasCategoria.tipo, 'barras');
+});
+
+test('painel: alteração parcial muda só o que foi enviado', () => {
+  const e = criarEstadoInicial();
+  const r = api(e, 'PUT', '/api/config', { painel: { despesasCategoria: { tipo: 'rosca' }, ritmo: { visivel: false } } });
+  assert.deepEqual(r.painel.despesasCategoria, { visivel: true, tipo: 'rosca' });
+  assert.deepEqual(r.painel.ritmo, { visivel: false, tipo: 'lista' });
+  assert.deepEqual(r.painel.evolucao, { visivel: true, tipo: 'barras' }, 'outras seções intactas');
+  api(e, 'PUT', '/api/config', { painel: { despesasCategoria: { visivel: false } } });
+  assert.deepEqual(api(e, 'GET', '/api/config').painel.despesasCategoria, { visivel: false, tipo: 'rosca' }, 'tipo mantido ao ocultar');
+  api(e, 'PUT', '/api/config', { lembretes: { hora: 7 } });
+  assert.equal(api(e, 'GET', '/api/config').painel.ritmo.visivel, false, 'salvar lembretes não mexe no painel');
+});
+
+test('painel: valores inválidos dão 400 e nada muda', () => {
+  const e = criarEstadoInicial();
+  const antes = structuredClone(e.config);
+  const put = (painel) => () => rotear(e, 'PUT', '/api/config', { painel, lembretes: { hora: 5 } }, { agora: AGORA });
+  falha(put('rosca'), 400, '"painel"');
+  falha(put([]), 400, '"painel"');
+  falha(put(null), 400, '"painel"');
+  falha(put({ graficoNovo: { tipo: 'barras' } }), 400, '"painel.graficoNovo"');
+  falha(put({ evolucao: 'barras' }), 400, '"painel.evolucao"');
+  falha(put({ evolucao: { tipo: 'pizza' } }), 400, '"painel.evolucao.tipo"');
+  falha(put({ ritmo: { tipo: 'barras' } }), 400, '"painel.ritmo.tipo"');
+  falha(put({ fixas: { visivel: 'nao' } }), 400, '"painel.fixas.visivel"');
+  falha(put({ fixas: { tipo: 'pizza' }, ritmo: { tipo: 'x' } }), 400, '"painel.ritmo.tipo"');
+  assert.deepEqual(e.config, antes, 'nem a parte válida nem os lembretes foram gravados');
+});
+
+test('painel: estado antigo e valores ruins viram padrão; viaja no backup', () => {
+  const e = criarEstadoInicial();
+  e.config = { ...e.config, painel: { fixas: { visivel: false, tipo: 'pizza' }, evolucao: { visivel: 'x', tipo: 'pizza' }, lixo: { tipo: 'a' } } };
+  const p = validarEstado(e).config.painel;
+  assert.deepEqual(p.fixas, { visivel: false, tipo: 'pizza' });
+  assert.deepEqual(p.evolucao, { visivel: true, tipo: 'barras' });
+  assert.equal(p.lixo, undefined);
+
+  const velho = criarEstadoInicial();
+  delete velho.config.painel;
+  assert.equal(api(velho, 'PUT', '/api/config', { painel: { fixas: { tipo: 'pizza' } } }).painel.fixas.tipo, 'pizza');
+
+  api(e, 'PUT', '/api/config', { painel: { maioresDespesas: { tipo: 'barras' } } });
+  assert.equal(lerBackup(montarBackup(validarEstado(e))).config.painel.maioresDespesas.tipo, 'barras');
 });
 
 test('config viaja no backup', () => {

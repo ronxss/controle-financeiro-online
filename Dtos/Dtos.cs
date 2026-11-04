@@ -172,6 +172,8 @@ public class ConfigRequest
 {
     public LembretesRequest? Lembretes { get; set; }
     public BackupConfigRequest? Backup { get; set; }
+    /// <summary>{ "secao": { "visivel"?: bool, "tipo"?: string } } — lido à mão para dar as mesmas mensagens do app local.</summary>
+    public System.Text.Json.JsonElement Painel { get; set; } // ausente = Undefined; null explícito = Null (inválido)
 }
 public class LembretesRequest
 {
