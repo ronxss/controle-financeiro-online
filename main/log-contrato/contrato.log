@@ -1,39 +1,9 @@
 ok - cadastros e cartão (12 passos)
 ok - lançamentos, fixas e filtros (19 passos)
-FALHOU - parcelas
-[parcelas] passo 11 (PATCH /api/lancamentos/2/fixa) difere do motor local
-+ actual - expected
-
-  {
-    corpo: {
-      mensagem: 'Um lançamento parcelado não pode ser fixo.'
-    },
-+   passo: 'PATCH /api/lancamentos/5/fixa',
--   passo: 'PATCH /api/lancamentos/2/fixa',
-    status: 400
-  }
-
-
+ok - parcelas (20 passos)
 ok - copiar fixas (10 passos)
 ok - resumo, orçamento e painel (21 passos)
-FALHOU - cartões e faturas
-[cartões e faturas] passo 15 (POST /api/cartoes/6/pagar) difere do motor local
-+ actual - expected
-... Skipped lines
-
-  {
-    corpo: {
-      fatura: {
-        contaId: 'conta#1',
-        fechamento: '2026-11-05',
-...
-    },
-+   passo: 'POST /api/cartoes/32/pagar',
--   passo: 'POST /api/cartoes/6/pagar',
-    status: 200
-  }
-
-
+ok - cartões e faturas (21 passos)
 ok - metas (23 passos)
 ok - configurações, lembretes e registro de backup (18 passos)
 ok - backup do app local importado no servidor
@@ -43,4 +13,4 @@ ok - backup inválido recusado sem perder dados
 ok - troca de senha por e-mail
 ok - um usuário não vê nem altera dados de outro
 
-2 grupo(s) com falha
+todos os contratos conferem

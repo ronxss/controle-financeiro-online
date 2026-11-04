@@ -1,5 +1,5 @@
 
-added 225 packages, and audited 226 packages in 16s
+added 225 packages, and audited 226 packages in 18s
 
 2 vulnerabilities (1 moderate, 1 high)
 
@@ -16,118 +16,118 @@ found 0 vulnerabilities
 > controle-financeiro-client@1.0.0 test
 > node --test "src/**/*.test.js"
 
-✔ estado inicial traz as listas da planilha (2.365157ms)
-✔ GET /api/categorias: ordena por tipo e nome e usa limiteMensal em reais (11.213712ms)
-✔ lançamento: cria, lista no formato da API e devolve só o id no POST (1.422061ms)
-✔ lançamento: aplica as mesmas validações e mensagens da API (1.314641ms)
-✔ lançamento: valores são exatos em centavos (sem erro de ponto flutuante) (0.707951ms)
-✔ lançamento: editar, alternar status e excluir; ids inexistentes dão 404 (0.634996ms)
-✔ listagem: filtros, busca sem diferenciar maiúsculas e ordem por data e id decrescentes (0.814959ms)
-✔ mês inválido gera o mesmo erro da API (0.552289ms)
-✔ resumo: separa realizado de pendente e calcula os saldos (0.538262ms)
-✔ orçamento: limite, realizado, disponível e percentual; salvar limites (0.963016ms)
-✔ categorias: duplicadas (sem diferenciar maiúsculas), tipo e limite (0.738954ms)
-✔ categorias: não troca o tipo nem exclui quando há lançamentos (0.343638ms)
-✔ contas: CRUD com as mesmas regras e mensagens (0.618477ms)
-✔ ids nunca são reaproveitados depois de excluir (0.153901ms)
-✔ rotas desconhecidas devolvem 404 como a API (0.170638ms)
-✔ alterou: leituras não pedem gravação; escritas pedem (0.248645ms)
-✔ backup: ida e volta preserva tudo; arquivos adulterados são recusados (2.4601ms)
-✔ backup: contadores nunca ficam atrás dos ids existentes (0.353489ms)
-✔ hojeISO usa a data local (0.140699ms)
-✔ fixa: nasce falsa, pode ser criada como fixa e aparece na listagem (0.291023ms)
-✔ fixa: receitas também podem ser fixas; valor precisa ser booleano (0.301592ms)
-✔ fixa: editar sem mandar o campo preserva; mandar muda; trocar o tipo mantém (0.319431ms)
-✔ fixa: PATCH alterna (despesa e receita), valida e respeita ids inexistentes (0.446638ms)
-✔ fixa: filtro da listagem (true/false) e valor inválido (0.299036ms)
-✔ somarMeses e diasNoMes: viradas de ano e anos bissextos (0.219692ms)
-✔ copiar fixas: cria receitas e despesas fixas no mês seguinte, pendentes, mesmo dia; ignora as variáveis (0.787935ms)
-✔ copiar fixas: não duplica ao repetir a ação, nem o que já existe no mês (0.35122ms)
-✔ copiar fixas: despesas repetidas na origem são todas copiadas (conta por quantidade) (0.279272ms)
-✔ copiar fixas: dia 31 vira o último dia do mês menor; virada de ano; origem explícita (0.33514ms)
-✔ copiar fixas: sem fixas na origem, mês igual e mês inválido (0.363484ms)
-✔ copiar fixas: sem corpo usa o mês atual; ids continuam únicos (0.223564ms)
-✔ painel: totais de despesas, receitas, fixas e variáveis (2.959187ms)
-✔ painel: orçamento total, situação por categoria e ordem (pior primeiro) (0.813504ms)
-✔ painel: limites exatos nos cortes (80% é alerta, 100% é ok, acima é estourado) (0.901108ms)
-✔ painel: comparação com o mês anterior (1.037904ms)
-✔ painel: comparação atravessa a virada de ano (0.27905ms)
-✔ painel: ritmo e projeção só no mês em andamento (0.87981ms)
-✔ painel: evolução tem 6 meses terminando no mês pedido, com realizado de receitas e despesas (0.689997ms)
-✔ painel: maiores despesas (até 5, valor decrescente, inclui pendentes e marca as fixas) (0.774414ms)
-✔ painel: mês vazio, mês inválido, método errado e padrão = mês atual (0.426369ms)
-✔ painel: valores em centavos exatos (sem erro de ponto flutuante) (0.224292ms)
-✔ dados antigos sem o campo "fixa" continuam válidos e contam como não fixa (0.535948ms)
-✔ backup preserva "fixa" de despesas e receitas; valor que não é booleano vira não fixo (0.559238ms)
-✔ receitas fixas: filtro "só fixas" traz receitas e despesas fixas (0.355434ms)
-✔ receitas fixas: copiar não confunde receita e despesa com a mesma descrição (0.314974ms)
-✔ receitas fixas: novo endereço /api/lancamentos-fixos/copiar faz o mesmo que o antigo (0.791749ms)
-✔ painel: receitas fixas, saldo fixo e comprometimento (0.551066ms)
-✔ painel: sem receitas fixas, comprometimento é null (não divide por zero) (0.385214ms)
-✔ grava cópia em Documentos e abre o compartilhamento com o arquivo do cache (1.327732ms)
-✔ fechar a folha de compartilhamento não é erro: a cópia em Documentos continua valendo (0.270558ms)
-✔ sem permissão em Documentos (Android antigo): usa só o compartilhamento (0.217908ms)
-✔ sem permissão e compartilhamento cancelado: não salvou nada, sem erro (0.244117ms)
-✔ compartilhamento com erro de verdade: lança só se também não salvou em Documentos (0.586558ms)
-✔ config: padrão, leitura e alteração parcial (2.125404ms)
-✔ config: rejeita valores inválidos e não deixa editar as datas de backup (0.757007ms)
-✔ config: dados e backups antigos (sem config) ganham o padrão; valores ruins viram padrão (1.740482ms)
-✔ config viaja no backup (0.351874ms)
-✔ registrar backup: manual e automático guardam instantes separados (0.431795ms)
-✔ lembretes: atrasados, próximos dias e o que fica de fora (1.94833ms)
-✔ lembretes: aviso de backup só quando há lançamentos e o último foi há 7+ dias (0.401065ms)
-✔ diasEntre atravessa meses, anos e horário de verão (0.141715ms)
-✔ notificações: desligadas não agendam nada (0.361488ms)
-✔ notificações: aviso antecipado e no dia, na hora escolhida, só pendentes futuros (2.867031ms)
-✔ notificações: "amanhã", sem detalhes, e mesmo dia já passado da hora (0.324592ms)
-✔ notificações: antecedência zero e limite de quantidade (os mais próximos) (0.700645ms)
-✔ reagendar: cancela os antigos e agenda os novos; lista vazia só cancela (0.463267ms)
-✔ permissão: já concedida, perguntar, negada (0.292328ms)
-✔ backup automático: desligado, sem dados, primeira vez, intervalo de 7 dias (0.851386ms)
-✔ backup automático: grava backup válido e mantém só os 4 mais recentes, sem tocar nos manuais (0.665329ms)
-✔ backup automático: o arquivo gravado pode ser importado; falha ao limpar não invalida (0.683203ms)
-✔ metas: criar, listar e calcular quanto guardar por mês (3.155429ms)
-✔ metas: depósitos, retiradas, progresso e conclusão (0.830613ms)
-✔ metas: retirada maior que o guardado e outras validações (1.765345ms)
-✔ metas: editar, excluir e excluir depósito (sem deixar saldo negativo) (1.208076ms)
-✔ metas: ritmo, atraso e ordem da lista (11.455156ms)
-✔ metas: sugestão mensal arredonda para cima (não falta 1 centavo no fim) (0.275735ms)
-✔ metas viajam no backup; backup antigo sem metas é válido; lixo é recusado (2.310242ms)
-✔ CSV: cabeçalho, formato brasileiro, sinal do valor, BOM e CRLF (1.527001ms)
-✔ CSV: aspas, ponto e vírgula, quebra de linha e proteção contra fórmulas (0.721775ms)
-✔ CSV: período, parcela e fatura do cartão (1.373433ms)
-✔ parcelas: divide o total em centavos exatos, um por mês, 1ª com o status escolhido (2.674304ms)
-✔ parcelas: dia 31 vira o último dia dos meses menores; à vista continua igual (0.538653ms)
-✔ parcelas: validações (1.889236ms)
-✔ parcelas: editar mexe só naquela parcela e não deixa virar fixa (0.515348ms)
-✔ parcelas: excluir uma, a partir dela ou todas (0.659284ms)
-✔ parcelas e cartão sobrevivem ao backup; lixo vira "não tem" (1.261136ms)
-✔ contas: cartão com fechamento e vencimento; PUT sem o campo mantém; null tira (1.073092ms)
-✔ fatura: compra até o fechamento entra no mês; depois, no seguinte; vencimento depois do fechamento (0.241575ms)
-✔ fatura: vencimento antes do fechamento cai no mês seguinte; dias 29-31 em fevereiro (0.23553ms)
-✔ fatura do mês: período de compras coberto (0.410555ms)
-✔ faturas: lista por mês de vencimento, total, estorno e situação (0.642069ms)
-✔ faturas: situações aberta, fechada, vencida, paga e vazia (0.466655ms)
-✔ pagar fatura: marca só as pendentes daquela fatura e daquele cartão (0.677111ms)
-✔ lançamento no cartão informa a fatura; parcelas caem em faturas seguidas (0.446442ms)
-✔ vencimentos: compras no cartão viram a fatura, pelo vencimento dela (0.698363ms)
-✔ vencimentos: fatura só com estorno não aparece; notificação usa o vencimento da fatura (0.921397ms)
-✔ notificações: faturas de meses e cartões diferentes e lançamentos comuns nunca repetem id (0.80836ms)
-✔ criar conta devolve sessão com dados iniciais e registra o usuário (17.656815ms)
-✔ entrar com a senha certa recupera exatamente os dados salvos (4.886889ms)
-✔ senha errada e usuário inexistente dão a MESMA mensagem (não revela quem existe) (3.53508ms)
-✔ nome repetido é recusado, ignorando maiúsculas, acentos de composição e espaços (1.085347ms)
-✔ valida nome e senha (0.442494ms)
-✔ nada legível fica gravado: os dados e a senha estão cifrados (1.38354ms)
-✔ cada gravação usa um IV diferente (1.219689ms)
-✔ contas são isoladas: dados de uma não aparecem na outra (3.258407ms)
-✔ blocos cifrados são presos ao id da conta: copiar tudo da conta A para a B não abre (1.815324ms)
-✔ dado adulterado no disco é detectado (não abre com lixo) (1.679679ms)
-✔ alterar senha: a antiga para de funcionar, a nova abre os mesmos dados (4.521821ms)
-✔ excluir remove a conta e os dados, e libera o nome (1.654489ms)
-✔ a primeira conta adota os dados antigos (sem senha); a segunda começa limpa (1.891251ms)
-✔ dados antigos inválidos não são adotados nem apagados (0.871592ms)
-✔ conta sem arquivo de dados abre com dados iniciais (1.552121ms)
+✔ estado inicial traz as listas da planilha (2.468516ms)
+✔ GET /api/categorias: ordena por tipo e nome e usa limiteMensal em reais (15.956481ms)
+✔ lançamento: cria, lista no formato da API e devolve só o id no POST (2.328904ms)
+✔ lançamento: aplica as mesmas validações e mensagens da API (2.0655ms)
+✔ lançamento: valores são exatos em centavos (sem erro de ponto flutuante) (1.000765ms)
+✔ lançamento: editar, alternar status e excluir; ids inexistentes dão 404 (1.540688ms)
+✔ listagem: filtros, busca sem diferenciar maiúsculas e ordem por data e id decrescentes (1.804561ms)
+✔ mês inválido gera o mesmo erro da API (0.872545ms)
+✔ resumo: separa realizado de pendente e calcula os saldos (1.79828ms)
+✔ orçamento: limite, realizado, disponível e percentual; salvar limites (1.304485ms)
+✔ categorias: duplicadas (sem diferenciar maiúsculas), tipo e limite (1.716356ms)
+✔ categorias: não troca o tipo nem exclui quando há lançamentos (0.556212ms)
+✔ contas: CRUD com as mesmas regras e mensagens (0.970188ms)
+✔ ids nunca são reaproveitados depois de excluir (0.262903ms)
+✔ rotas desconhecidas devolvem 404 como a API (0.32519ms)
+✔ alterou: leituras não pedem gravação; escritas pedem (0.382387ms)
+✔ backup: ida e volta preserva tudo; arquivos adulterados são recusados (2.472824ms)
+✔ backup: contadores nunca ficam atrás dos ids existentes (0.374041ms)
+✔ hojeISO usa a data local (0.188613ms)
+✔ fixa: nasce falsa, pode ser criada como fixa e aparece na listagem (0.285355ms)
+✔ fixa: receitas também podem ser fixas; valor precisa ser booleano (0.379832ms)
+✔ fixa: editar sem mandar o campo preserva; mandar muda; trocar o tipo mantém (0.442679ms)
+✔ fixa: PATCH alterna (despesa e receita), valida e respeita ids inexistentes (0.564648ms)
+✔ fixa: filtro da listagem (true/false) e valor inválido (0.433633ms)
+✔ somarMeses e diasNoMes: viradas de ano e anos bissextos (0.223829ms)
+✔ copiar fixas: cria receitas e despesas fixas no mês seguinte, pendentes, mesmo dia; ignora as variáveis (0.992479ms)
+✔ copiar fixas: não duplica ao repetir a ação, nem o que já existe no mês (0.391424ms)
+✔ copiar fixas: despesas repetidas na origem são todas copiadas (conta por quantidade) (0.311324ms)
+✔ copiar fixas: dia 31 vira o último dia do mês menor; virada de ano; origem explícita (0.459251ms)
+✔ copiar fixas: sem fixas na origem, mês igual e mês inválido (0.445445ms)
+✔ copiar fixas: sem corpo usa o mês atual; ids continuam únicos (0.278752ms)
+✔ painel: totais de despesas, receitas, fixas e variáveis (3.477329ms)
+✔ painel: orçamento total, situação por categoria e ordem (pior primeiro) (0.909715ms)
+✔ painel: limites exatos nos cortes (80% é alerta, 100% é ok, acima é estourado) (1.704044ms)
+✔ painel: comparação com o mês anterior (1.341434ms)
+✔ painel: comparação atravessa a virada de ano (0.312846ms)
+✔ painel: ritmo e projeção só no mês em andamento (1.811495ms)
+✔ painel: evolução tem 6 meses terminando no mês pedido, com realizado de receitas e despesas (1.258769ms)
+✔ painel: maiores despesas (até 5, valor decrescente, inclui pendentes e marca as fixas) (1.254621ms)
+✔ painel: mês vazio, mês inválido, método errado e padrão = mês atual (0.628968ms)
+✔ painel: valores em centavos exatos (sem erro de ponto flutuante) (0.295393ms)
+✔ dados antigos sem o campo "fixa" continuam válidos e contam como não fixa (1.271303ms)
+✔ backup preserva "fixa" de despesas e receitas; valor que não é booleano vira não fixo (0.754454ms)
+✔ receitas fixas: filtro "só fixas" traz receitas e despesas fixas (0.861985ms)
+✔ receitas fixas: copiar não confunde receita e despesa com a mesma descrição (0.463368ms)
+✔ receitas fixas: novo endereço /api/lancamentos-fixos/copiar faz o mesmo que o antigo (1.106814ms)
+✔ painel: receitas fixas, saldo fixo e comprometimento (0.744274ms)
+✔ painel: sem receitas fixas, comprometimento é null (não divide por zero) (0.728164ms)
+✔ grava cópia em Documentos e abre o compartilhamento com o arquivo do cache (2.017491ms)
+✔ fechar a folha de compartilhamento não é erro: a cópia em Documentos continua valendo (0.416831ms)
+✔ sem permissão em Documentos (Android antigo): usa só o compartilhamento (0.238637ms)
+✔ sem permissão e compartilhamento cancelado: não salvou nada, sem erro (0.31459ms)
+✔ compartilhamento com erro de verdade: lança só se também não salvou em Documentos (1.065517ms)
+✔ config: padrão, leitura e alteração parcial (4.65825ms)
+✔ config: rejeita valores inválidos e não deixa editar as datas de backup (1.710095ms)
+✔ config: dados e backups antigos (sem config) ganham o padrão; valores ruins viram padrão (3.280473ms)
+✔ config viaja no backup (0.54451ms)
+✔ registrar backup: manual e automático guardam instantes separados (0.673953ms)
+✔ lembretes: atrasados, próximos dias e o que fica de fora (3.134243ms)
+✔ lembretes: aviso de backup só quando há lançamentos e o último foi há 7+ dias (0.750486ms)
+✔ diasEntre atravessa meses, anos e horário de verão (0.204293ms)
+✔ notificações: desligadas não agendam nada (0.497933ms)
+✔ notificações: aviso antecipado e no dia, na hora escolhida, só pendentes futuros (1.658348ms)
+✔ notificações: "amanhã", sem detalhes, e mesmo dia já passado da hora (0.612348ms)
+✔ notificações: antecedência zero e limite de quantidade (os mais próximos) (1.155936ms)
+✔ reagendar: cancela os antigos e agenda os novos; lista vazia só cancela (0.79517ms)
+✔ permissão: já concedida, perguntar, negada (0.439784ms)
+✔ backup automático: desligado, sem dados, primeira vez, intervalo de 7 dias (0.306484ms)
+✔ backup automático: grava backup válido e mantém só os 4 mais recentes, sem tocar nos manuais (0.847771ms)
+✔ backup automático: o arquivo gravado pode ser importado; falha ao limpar não invalida (0.876463ms)
+✔ metas: criar, listar e calcular quanto guardar por mês (4.707682ms)
+✔ metas: depósitos, retiradas, progresso e conclusão (1.228642ms)
+✔ metas: retirada maior que o guardado e outras validações (2.439993ms)
+✔ metas: editar, excluir e excluir depósito (sem deixar saldo negativo) (2.14486ms)
+✔ metas: ritmo, atraso e ordem da lista (15.744454ms)
+✔ metas: sugestão mensal arredonda para cima (não falta 1 centavo no fim) (0.449963ms)
+✔ metas viajam no backup; backup antigo sem metas é válido; lixo é recusado (3.467708ms)
+✔ CSV: cabeçalho, formato brasileiro, sinal do valor, BOM e CRLF (2.35867ms)
+✔ CSV: aspas, ponto e vírgula, quebra de linha e proteção contra fórmulas (1.267696ms)
+✔ CSV: período, parcela e fatura do cartão (2.260997ms)
+✔ parcelas: divide o total em centavos exatos, um por mês, 1ª com o status escolhido (6.340571ms)
+✔ parcelas: dia 31 vira o último dia dos meses menores; à vista continua igual (1.126301ms)
+✔ parcelas: validações (4.186105ms)
+✔ parcelas: editar mexe só naquela parcela e não deixa virar fixa (0.87528ms)
+✔ parcelas: excluir uma, a partir dela ou todas (1.459425ms)
+✔ parcelas e cartão sobrevivem ao backup; lixo vira "não tem" (2.774269ms)
+✔ contas: cartão com fechamento e vencimento; PUT sem o campo mantém; null tira (2.242131ms)
+✔ fatura: compra até o fechamento entra no mês; depois, no seguinte; vencimento depois do fechamento (0.402364ms)
+✔ fatura: vencimento antes do fechamento cai no mês seguinte; dias 29-31 em fevereiro (0.541505ms)
+✔ fatura do mês: período de compras coberto (0.837991ms)
+✔ faturas: lista por mês de vencimento, total, estorno e situação (1.896764ms)
+✔ faturas: situações aberta, fechada, vencida, paga e vazia (1.19544ms)
+✔ pagar fatura: marca só as pendentes daquela fatura e daquele cartão (1.245364ms)
+✔ lançamento no cartão informa a fatura; parcelas caem em faturas seguidas (1.132322ms)
+✔ vencimentos: compras no cartão viram a fatura, pelo vencimento dela (1.506744ms)
+✔ vencimentos: fatura só com estorno não aparece; notificação usa o vencimento da fatura (1.845108ms)
+✔ notificações: faturas de meses e cartões diferentes e lançamentos comuns nunca repetem id (1.649401ms)
+✔ criar conta devolve sessão com dados iniciais e registra o usuário (17.635956ms)
+✔ entrar com a senha certa recupera exatamente os dados salvos (9.221721ms)
+✔ senha errada e usuário inexistente dão a MESMA mensagem (não revela quem existe) (6.459627ms)
+✔ nome repetido é recusado, ignorando maiúsculas, acentos de composição e espaços (1.989579ms)
+✔ valida nome e senha (0.689101ms)
+✔ nada legível fica gravado: os dados e a senha estão cifrados (2.370022ms)
+✔ cada gravação usa um IV diferente (1.775016ms)
+✔ contas são isoladas: dados de uma não aparecem na outra (5.176578ms)
+✔ blocos cifrados são presos ao id da conta: copiar tudo da conta A para a B não abre (3.40891ms)
+✔ dado adulterado no disco é detectado (não abre com lixo) (2.35845ms)
+✔ alterar senha: a antiga para de funcionar, a nova abre os mesmos dados (6.124257ms)
+✔ excluir remove a conta e os dados, e libera o nome (2.266157ms)
+✔ a primeira conta adota os dados antigos (sem senha); a segunda começa limpa (2.076381ms)
+✔ dados antigos inválidos não são adotados nem apagados (1.6218ms)
+✔ conta sem arquivo de dados abre com dados iniciais (1.580031ms)
 ℹ tests 112
 ℹ suites 0
 ℹ pass 112
@@ -135,7 +135,7 @@ found 0 vulnerabilities
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 251.352476
+ℹ duration_ms 334.820942
 
 > controle-financeiro-client@1.0.0 build
 > vite build
@@ -168,8 +168,8 @@ computing gzip size...
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-greek-700-normal-0aHWxGLu.woff2         [39m[1m[2m  9.63 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-400-normal-BepgbcUK.woff       [39m[1m[2m 10.21 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-300-normal-D0x1uCa7.woff       [39m[1m[2m 10.26 kB[22m[1m[22m
-[2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-700-normal-D8g9KsRf.woff       [39m[1m[2m 10.40 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-500-normal-C8ZOEKN4.woff       [39m[1m[2m 10.40 kB[22m[1m[22m
+[2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-700-normal-D8g9KsRf.woff       [39m[1m[2m 10.40 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-symbols-300-normal-DDU7avhj.woff2       [39m[1m[2m 10.70 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-symbols-400-normal-CB1Ce4Gk.woff2       [39m[1m[2m 10.74 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-symbols-500-normal-B_CZKVJS.woff2       [39m[1m[2m 10.84 kB[22m[1m[22m
@@ -188,8 +188,8 @@ computing gzip size...
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-latin-ext-700-normal-DSBUz0N1.woff2     [39m[1m[2m 15.20 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-ext-300-normal-C0UYUNTV.woff   [39m[1m[2m 15.96 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-ext-400-normal-DhDk0Xwi.woff   [39m[1m[2m 15.96 kB[22m[1m[22m
-[2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-ext-700-normal-BWOtdzfy.woff   [39m[1m[2m 16.10 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-ext-500-normal-SCgicl0l.woff   [39m[1m[2m 16.10 kB[22m[1m[22m
+[2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-ext-700-normal-BWOtdzfy.woff   [39m[1m[2m 16.10 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-ext-400-normal-qHufge6k.woff2  [39m[1m[2m 17.37 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-ext-300-normal-DIxttMbC.woff2  [39m[1m[2m 17.50 kB[22m[1m[22m
 [2m../wwwroot/[22m[2massets/[22m[32mroboto-cyrillic-ext-500-normal-BWC_xYeb.woff2  [39m[1m[2m 17.60 kB[22m[1m[22m
@@ -221,7 +221,7 @@ computing gzip size...
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
-[32m✓ built in 2.55s[39m
+[32m✓ built in 3.57s[39m
 
 > controle-financeiro-client@1.0.0 build:mobile
 > vite build --mode mobile
@@ -310,4 +310,4 @@ computing gzip size...
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
-[32m✓ built in 2.73s[39m
+[32m✓ built in 3.52s[39m
