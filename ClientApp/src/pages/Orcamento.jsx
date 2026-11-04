@@ -7,13 +7,11 @@ import { useTheme } from '@mui/material/styles';
 import { api } from '../api.js';
 import { useMes } from '../MesContext.jsx';
 import { brl, parseValor } from '../utils/format.js';
-import { MODO_LOCAL } from '../modo.js';
 import MetasPainel from '../components/MetasPainel.jsx';
 
 /** Orçamento: limites por categoria e (no modo local) metas de economia, em abas. */
 export default function Orcamento() {
   const [aba, setAba] = useState(0);
-  if (!MODO_LOCAL) return <Limites />;
   return (
     <Stack spacing={2}>
       <Typography variant="h5" fontWeight={700}>Orçamento</Typography>

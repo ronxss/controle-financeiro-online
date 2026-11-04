@@ -9,12 +9,12 @@ namespace ControleFinanceiro.Controllers;
 
 /// <summary>Aba "Resumo" da planilha. Realizado = apenas lançamentos com status Pago/Recebido.</summary>
 [Route("api/resumo")]
-public class ResumoController(AppDbContext db) : ApiBase
+public class ResumoController(AppDbContext db, Relogio relogio) : ApiBase
 {
     [HttpGet]
     public async Task<IActionResult> Obter([FromQuery] string? mes)
     {
-        if (!Periodo.TentarObter(mes, out var inicio, out var fim))
+        if (!Periodo.TentarObter(mes, relogio.Hoje, out var inicio, out var fim))
             return Erro("Mês inválido. Use o formato AAAA-MM.");
 
         var userId = UserId;
@@ -57,12 +57,12 @@ public class ResumoController(AppDbContext db) : ApiBase
 
 /// <summary>Aba "Orçamento" da planilha: limite mensal por categoria x realizado do mês.</summary>
 [Route("api/orcamento")]
-public class OrcamentoController(AppDbContext db) : ApiBase
+public class OrcamentoController(AppDbContext db, Relogio relogio) : ApiBase
 {
     [HttpGet]
     public async Task<IActionResult> Obter([FromQuery] string? mes)
     {
-        if (!Periodo.TentarObter(mes, out var inicio, out var fim))
+        if (!Periodo.TentarObter(mes, relogio.Hoje, out var inicio, out var fim))
             return Erro("Mês inválido. Use o formato AAAA-MM.");
 
         var userId = UserId;

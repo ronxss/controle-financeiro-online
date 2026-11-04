@@ -9,7 +9,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import { api } from '../api.js';
 import { useMes } from '../MesContext.jsx';
 import { brl } from '../utils/format.js';
-import { MODO_LOCAL, TEM_FIXAS } from '../modo.js';
+import { TEM_FIXAS } from '../modo.js';
 import AvisosResumo from '../components/AvisosResumo.jsx';
 import PainelResumo from '../components/PainelResumo.jsx';
 
@@ -52,7 +52,7 @@ export default function Resumo() {
         </Button>
       </Stack>
 
-      {MODO_LOCAL && <AvisosResumo onMudou={() => setVersao((v) => v + 1)} />}
+      <AvisosResumo onMudou={() => setVersao((v) => v + 1)} />
       {erro && <Alert severity="error">{erro}</Alert>}
       {vazio && <Alert severity="info">Nenhum lançamento neste mês ainda. Clique em “Novo lançamento” para começar.</Alert>}
 

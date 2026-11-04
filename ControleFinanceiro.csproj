@@ -5,11 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>ControleFinanceiro</RootNamespace>
-    <UserSecretsId>controle-financeiro-local</UserSecretsId>
+    <UserSecretsId>controle-financeiro-online</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Google.Apis.Auth" Version="1.*" />
+    <PackageReference Include="MailKit" Version="4.*" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.*" />
     <!-- Dependência indireta que vinha na 9.0.11 com 2 falhas de negação de serviço

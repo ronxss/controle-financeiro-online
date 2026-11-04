@@ -1,0 +1,79 @@
+name: Publicar no Azure
+
+# Publica o site (React + API) no Azure App Service criado pelo infra/main.bicep.
+# Roda a cada push na main e também à mão (Actions -> "Publicar no Azure" -> Run workflow).
+# Precisa de dois itens em Settings -> Secrets and variables -> Actions (veja INFRA.md):
+#   segredo  AZURE_WEBAPP_PUBLISH_PROFILE  conteúdo do "perfil de publicação" baixado do portal
+#   variável AZURE_WEBAPP_NAME             nome do App Service (ex.: meuprefixo-app)
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Confere a configuração
+        env:
+          PERFIL: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          NOME: ${{ vars.AZURE_WEBAPP_NAME }}
+        run: |
+          if [ -z "$PERFIL" ] || [ -z "$NOME" ]; then
+            echo "::warning::Deploy ignorado: configure o segredo AZURE_WEBAPP_PUBLISH_PROFILE e a variável AZURE_WEBAPP_NAME (veja INFRA.md)."
+            echo "PULAR=sim" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/checkout@v7
+        if: env.PULAR != 'sim'
+      - uses: actions/setup-node@v7
+        if: env.PULAR != 'sim'
+        with:
+          node-version: 24
+      - uses: actions/setup-dotnet@v5
+        if: env.PULAR != 'sim'
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Compila front-end e back-end
+        if: env.PULAR != 'sim'
+        run: |
+          set -e
+          cd ClientApp
+          if [ -f package-lock.json ]; then npm ci --no-fund; else npm install --no-fund; fi
+          npm test
+          npm run build            # gera ../wwwroot
+          cd ..
+          dotnet publish -c Release -o publicar -p:SkipClientBuild=true
+          test -f publicar/wwwroot/index.html
+
+      - name: Publica no App Service
+        if: env.PULAR != 'sim'
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: publicar
+
+      - name: Confere se o site respondeu
+        if: env.PULAR != 'sim'
+        env:
+          NOME: ${{ vars.AZURE_WEBAPP_NAME }}
+        run: |
+          # O plano grátis e o banco grátis "dormem": o primeiro acesso pode levar 1-2 minutos.
+          for i in $(seq 1 24); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://${NOME}.azurewebsites.net/api/auth/config" || true)
+            echo "tentativa $i: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "::error::O site não respondeu depois do deploy. Veja os logs em Monitoring -> Log stream no portal do Azure."
+          exit 1

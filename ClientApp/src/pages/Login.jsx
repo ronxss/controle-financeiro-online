@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Box, Button, Card, CardContent, Divider, IconButton, InputAdornment, Stack, Tab, Tabs, TextField, Typography,
+  Alert, Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider,
+  IconButton, InputAdornment, Link, Stack, Tab, Tabs, TextField, Typography,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -19,6 +20,7 @@ export default function Login() {
   const [mostrar, setMostrar] = useState(false);
   const [erro, setErro] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [esqueci, setEsqueci] = useState(false);
 
   const novo = aba === 1;
 
@@ -94,6 +96,11 @@ export default function Login() {
               <Button type="submit" variant="contained" size="large" disabled={enviando || !email || !senha}>
                 {novo ? 'Criar conta' : 'Entrar'}
               </Button>
+              {!novo && (
+                <Link component="button" type="button" variant="body2" onClick={() => setEsqueci(true)} sx={{ alignSelf: 'center' }}>
+                  Esqueci minha senha
+                </Link>
+              )}
             </Stack>
           </Box>
 
@@ -105,6 +112,56 @@ export default function Login() {
           )}
         </CardContent>
       </Card>
+      <EsqueciSenhaDialog open={esqueci} emailInicial={email} onClose={() => setEsqueci(false)} />
     </Box>
+  );
+}
+
+/** Pede o link de troca de senha por e-mail. A resposta é sempre a mesma (não revela quem tem conta). */
+function EsqueciSenhaDialog({ open, emailInicial, onClose }) {
+  const [email, setEmail] = useState('');
+  const [msg, setMsg] = useState('');
+  const [erro, setErro] = useState('');
+  const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => { if (open) { setEmail(emailInicial); setMsg(''); setErro(''); } }, [open, emailInicial]);
+
+  const enviar = async (e) => {
+    e.preventDefault();
+    setErro('');
+    setEnviando(true);
+    try {
+      const r = await api.post('/api/auth/esqueci-senha', { email: email.trim() });
+      setMsg(r?.mensagem || 'Se houver uma conta com esse e-mail, enviamos um link.');
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
+      <Box component="form" onSubmit={enviar} noValidate>
+        <DialogTitle>Esqueci minha senha</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2}>
+            {msg ? (
+              <Alert severity="success">{msg} Confira também a caixa de spam.</Alert>
+            ) : (
+              <DialogContentText>Informe o e-mail da conta. Enviaremos um link para você criar uma nova senha.</DialogContentText>
+            )}
+            {erro && <Alert severity="error">{erro}</Alert>}
+            {!msg && (
+              <TextField label="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={onClose}>{msg ? 'Fechar' : 'Cancelar'}</Button>
+          {!msg && <Button type="submit" variant="contained" disabled={enviando || !email.trim()}>Enviar link</Button>}
+        </DialogActions>
+      </Box>
+    </Dialog>
   );
 }

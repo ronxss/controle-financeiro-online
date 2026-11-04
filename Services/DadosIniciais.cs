@@ -1,5 +1,6 @@
 using ControleFinanceiro.Data;
 using ControleFinanceiro.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace ControleFinanceiro.Services;
 
@@ -28,7 +29,7 @@ public static class DadosIniciais
         await db.SaveChangesAsync();
     }
 
-    /// <summary>Cria o banco se não existir. Tenta várias vezes (útil quando o SQL Server em Docker ainda está subindo).</summary>
+    /// <summary>Cria o banco se não existir. Tenta por até ~2 minutos (SQL Server em Docker subindo, ou Azure SQL grátis acordando da pausa).</summary>
     public static async Task InicializarBancoAsync(IServiceProvider sp, ILogger logger)
     {
         var db = sp.GetRequiredService<AppDbContext>();
@@ -36,12 +37,14 @@ public static class DadosIniciais
         {
             try
             {
-                await db.Database.EnsureCreatedAsync();
+                // Com migrations no projeto, o esquema evolui sem perder dados; sem elas (projeto antigo), cria do zero.
+                if (db.Database.GetMigrations().Any()) await db.Database.MigrateAsync();
+                else await db.Database.EnsureCreatedAsync();
                 return;
             }
-            catch (Exception ex) when (tentativa < 10)
+            catch (Exception ex) when (tentativa < 40)
             {
-                logger.LogWarning("Banco indisponível (tentativa {T}/10): {Msg}", tentativa, ex.Message);
+                logger.LogWarning("Banco indisponível (tentativa {T}/40): {Msg}", tentativa, ex.Message);
                 await Task.Delay(TimeSpan.FromSeconds(3));
             }
         }

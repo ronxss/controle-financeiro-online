@@ -12,6 +12,7 @@ import Lancamentos from './pages/Lancamentos.jsx';
 import Orcamento from './pages/Orcamento.jsx';
 import Cadastros from './pages/Cadastros.jsx';
 import Cartoes from './pages/Cartoes.jsx';
+import RedefinirSenha from './pages/RedefinirSenha.jsx';
 
 function Conteudo() {
   const { usuario, carregando } = useAuth();
@@ -23,7 +24,11 @@ function Conteudo() {
       </Box>
     );
   }
-  if (!usuario) return MODO_LOCAL ? <LoginLocal /> : <Login />;
+  if (!usuario) {
+    if (MODO_LOCAL) return <LoginLocal />;
+    // O link do e-mail de troca de senha abre esta tela mesmo sem login.
+    return window.location.pathname === '/redefinir-senha' ? <RedefinirSenha /> : <Login />;
+  }
 
   return (
     <MesProvider>
@@ -33,7 +38,7 @@ function Conteudo() {
           <Route path="/lancamentos" element={<Lancamentos />} />
           <Route path="/orcamento" element={<Orcamento />} />
           <Route path="/cadastros" element={<Cadastros />} />
-          {MODO_LOCAL && <Route path="/cartoes" element={<Cartoes />} />}
+          <Route path="/cartoes" element={<Cartoes />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

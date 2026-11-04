@@ -1,6 +1,15 @@
-# Controle Financeiro Pessoal
+# Controle Financeiro Pessoal — versão online
 
-Sistema web monolítico para controle de receitas e despesas, baseado na planilha `controle_financeiro_pessoal.xlsx`.
+Sistema web para controle de receitas e despesas, baseado na planilha `controle_financeiro_pessoal.xlsx`.
+**Este repositório é a versão online:** login pela rede, dados guardados no servidor (SQL Server), troca de senha por
+e-mail e infraestrutura no Azure. A versão que funciona só no aparelho (PWA/APK, sem servidor) fica no repositório
+[controle-financeiro](https://github.com/ronxss/controle-financeiro).
+
+- **Publicar no Azure (grátis):** veja [INFRA.md](INFRA.md).
+- **Mesmas regras nos dois:** fixas, parcelas, cartões e faturas, metas, painel, lembretes, planilha e backup. Os
+  [testes de contrato](tests/contrato/contrato.mjs) rodam no CI com um SQL Server de verdade e exigem que a API em C#
+  responda exatamente como o motor do app local (`ClientApp/src/local/engine.js`).
+- **Levar os dados do celular para o online:** no app local, *Exportar backup*; no site, *Importar backup*. O formato é o mesmo nos dois sentidos.
 
 - **Back-end:** C# / ASP.NET Core (.NET 10) + Entity Framework Core + **SQL Server**
 - **Front-end:** React + Material UI (Vite), servido pelo próprio ASP.NET Core (um único processo)
@@ -95,22 +104,26 @@ Cada usuário tem seus próprios dados, totalmente isolados.
 
 ```
 Program.cs            configuração: Identity, cookie, rate limit, headers, SPA fallback
-Controllers/          Auth, Lancamentos, Categorias, Contas, Resumo, Orcamento
+Controllers/          Auth (inclui troca de senha por e-mail), Lancamentos (fixas, parcelas), Categorias, Contas (cartões),
+                      Resumo, Orcamento, Painel, Cartoes, Metas, Preferencias (lembretes, CSV), Backup
 Models/ Data/ Dtos/   entidades, DbContext, contratos da API
-Services/             dados iniciais (Listas), mensagens do Identity em pt-BR
+Services/             Regras e Calculos (mesmas contas do motor local), Email (SMTP em segundo plano), dados iniciais
+infra/                main.bicep: App Service F1 + Azure SQL grátis
+tests/contrato/       servidor x motor local (roda no CI com SQL Server)
 ClientApp/            React + MUI (src/pages, src/components, src/auth)
 wwwroot/              build do React (gerado)
 ```
 
 ## Publicar online
 
+Caminho recomendado e gratuito: **Azure** — veja [INFRA.md](INFRA.md). As opções abaixo (VPS com Docker) também funcionam.
+
 Veja o guia completo em **[PUBLICAR.md](PUBLICAR.md)** (Google Cloud, Docker, VPS com HTTPS automático, Azure e checklist de segurança).
 
 ## Observações
 
-- O banco é criado com `EnsureCreated` (simples para uso local). Para evoluir o esquema com migrations:
-  remova a chamada em `DadosIniciais.InicializarBancoAsync`, rode `dotnet ef migrations add Inicial`
-  e use `db.Database.Migrate()`.
+- O esquema do banco usa migrations do EF Core (`Data/Migrations`), aplicadas ao iniciar. Para gerar uma nova sem ter o .NET
+  instalado: `git push origin HEAD:gerar-migracao/NomeDaMudanca` (veja [INFRA.md](INFRA.md)).
 - Para publicar em produção, sirva sempre por HTTPS e use um SQL Server com credenciais próprias.
 
 ## Usar outra versão do .NET
@@ -123,6 +136,9 @@ O projeto inclui `.devcontainer/` (instala .NET 10, Node 24 e Docker, e sobe o S
 Crie o codespace e, no terminal, execute: `dotnet run --urls http://localhost:5080`
 
 ## App no celular (modo local, sem servidor)
+
+> O código do modo local continua aqui (a interface é a mesma), mas o PWA e o APK são publicados pelo repositório
+> [controle-financeiro](https://github.com/ronxss/controle-financeiro). Este repositório não tem os workflows de Pages e APK.
 
 A mesma interface roda também **só no aparelho**, sem internet e sem servidor — os dados nunca saem do celular.
 

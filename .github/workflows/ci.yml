@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches-ignore: [ci-resultados, 'gerar-migracao/**']
   pull_request:
 
-# O token do workflow só lê o repositório (privilégio mínimo).
+# O token do workflow só lê o repositório (privilégio mínimo); só o job "relatorio" escreve.
 permissions:
   contents: read
 
@@ -29,11 +29,14 @@ jobs:
       - name: Front-end (instala, audita, testa e compila)
         working-directory: ClientApp
         run: |
-          if [ -f package-lock.json ]; then npm ci --no-fund; else npm install --no-fund; fi
-          npm audit --omit=dev --audit-level=high
-          npm test
-          npm run build
-          npm run build:mobile
+          set -o pipefail
+          {
+            if [ -f package-lock.json ]; then npm ci --no-fund; else npm install --no-fund; fi
+            npm audit --omit=dev --audit-level=high
+            npm test
+            npm run build
+            npm run build:mobile
+          } 2>&1 | tee "$RUNNER_TEMP/front.log"
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -42,11 +45,118 @@ jobs:
       # SkipClientBuild: o front-end já foi compilado no passo anterior.
       - name: Back-end (restaura e compila)
         run: |
-          dotnet restore
-          dotnet build -c Release --no-restore -p:SkipClientBuild=true
+          set -o pipefail
+          { dotnet restore && dotnet build -c Release --no-restore -p:SkipClientBuild=true; } 2>&1 | tee "$RUNNER_TEMP/back.log"
 
       # "dotnet list package --vulnerable" não falha sozinho; o grep transforma o aviso em erro.
       - name: Vulnerabilidades em pacotes NuGet
         run: |
-          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerabilidades.txt
-          ! grep -q "has the following vulnerable packages" vulnerabilidades.txt
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee "$RUNNER_TEMP/vulnerabilidades.log"
+          ! grep -q "has the following vulnerable packages" "$RUNNER_TEMP/vulnerabilidades.log"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: log-build
+          path: ${{ runner.temp }}/*.log
+          if-no-files-found: ignore
+
+  # Sobe o servidor com um SQL Server de verdade e confere que ele responde igual ao motor do app local.
+  contrato:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: 'Ci-Contrato-2026!' # banco descartável, só existe durante este job
+        ports:
+          - 1433:1433
+    env:
+      ASPNETCORE_ENVIRONMENT: Testes
+      ASPNETCORE_URLS: http://localhost:5080
+      ConnectionStrings__Default: 'Server=localhost,1433;Database=Contrato;User Id=sa;Password=Ci-Contrato-2026!;TrustServerCertificate=True'
+      AllowedHosts: '*'
+      App__LimiteAuthPorMinuto: '100000'
+      App__FusoHorario: America/Sao_Paulo
+      Email__Pasta: /tmp/emails
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Compila o servidor
+        run: |
+          set -o pipefail
+          dotnet build -c Release -p:SkipClientBuild=true 2>&1 | tee "$RUNNER_TEMP/build-servidor.log"
+
+      - name: Sobe o servidor
+        run: |
+          nohup dotnet run -c Release --no-build --no-launch-profile > "$RUNNER_TEMP/servidor.log" 2>&1 &
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:5080/api/auth/config > /dev/null 2>&1; then echo "servidor no ar"; exit 0; fi
+            sleep 2
+          done
+          echo "o servidor não subiu"; cat "$RUNNER_TEMP/servidor.log"; exit 1
+
+      - name: Testes de contrato (servidor x motor local)
+        env:
+          TZ: America/Sao_Paulo
+          SERVIDOR: http://localhost:5080
+          PASTA_EMAILS: /tmp/emails
+        run: |
+          set -o pipefail
+          node tests/contrato/contrato.mjs 2>&1 | tee "$RUNNER_TEMP/contrato.log"
+
+      - name: Log do servidor
+        if: always()
+        run: tail -n 300 "$RUNNER_TEMP/servidor.log" || true
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: log-contrato
+          path: ${{ runner.temp }}/*.log
+          if-no-files-found: ignore
+
+  # Guarda o resultado (e os logs) no branch "ci-resultados", para ser consultado só com git.
+  relatorio:
+    needs: [build, contrato]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: logs
+      - name: Publica no branch ci-resultados
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RAMO: ${{ github.head_ref || github.ref_name }}
+          BUILD: ${{ needs.build.result }}
+          CONTRATO: ${{ needs.contrato.result }}
+        run: |
+          set -e
+          git config --global user.name "ci"
+          git config --global user.email "ci@users.noreply.github.com"
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git clone -q --depth 1 --branch ci-resultados "$url" res 2>/dev/null; then :; else
+            mkdir res && cd res && git init -q && git checkout -q -b ci-resultados && git remote add origin "$url" && cd ..
+          fi
+          destino="res/${RAMO//\//_}"
+          rm -rf "$destino" && mkdir -p "$destino"
+          cp -r logs/. "$destino/" 2>/dev/null || true
+          printf 'commit=%s\nbuild=%s\ncontrato=%s\nrun=%s/%s/actions/runs/%s\n' \
+            "$GITHUB_SHA" "$BUILD" "$CONTRATO" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > "$destino/status.txt"
+          cd res
+          git add -A
+          git commit -q -m "CI ${RAMO} ${GITHUB_SHA::7}: build=${BUILD} contrato=${CONTRATO}" || exit 0
+          for i in 1 2 3; do git push -q origin ci-resultados && exit 0; git pull -q --rebase origin ci-resultados || true; done
+          exit 1

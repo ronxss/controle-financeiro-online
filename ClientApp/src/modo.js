@@ -6,5 +6,5 @@
 //   (que carrega o arquivo .env.mobile com VITE_MODO=local).
 export const MODO_LOCAL = import.meta.env.VITE_MODO === 'local';
 
-// Despesas fixas e painel de métricas existem só no modo local (o servidor em C# não as conhece).
-export const TEM_FIXAS = MODO_LOCAL;
+// Fixas, parcelas, cartões, metas e o painel existem nos dois modos (a API em C# implementa as mesmas regras).
+export const TEM_FIXAS = true;

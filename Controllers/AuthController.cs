@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Net;
+using System.Text;
 
 namespace ControleFinanceiro.Controllers;
 
@@ -16,6 +19,8 @@ public class AuthController(
     SignInManager<ApplicationUser> signIn,
     AppDbContext db,
     IConfiguration config,
+    FilaEmails emails,
+    IWebHostEnvironment env,
     ILogger<AuthController> logger) : ControllerBase
 {
     private const string ProvedorGoogle = "Google";
@@ -131,6 +136,87 @@ public class AuthController(
 
         await signIn.SignInAsync(user, isPersistent: false);
         return Ok(new UsuarioDto(user.NomeCompleto, user.Email!, await users.HasPasswordAsync(user)));
+    }
+
+    private const string MsgEsqueci =
+        "Se houver uma conta com esse e-mail, enviamos um link para criar uma nova senha. Ele vale por 1 hora.";
+    private const string MsgLinkInvalido = "Link inválido ou expirado. Peça um novo em “Esqueci minha senha”.";
+
+    /// <summary>
+    /// Endereço público do site, usado no link do e-mail. Em produção vem SEMPRE da configuração (App:UrlPublica):
+    /// montar o link a partir do cabeçalho Host da requisição deixaria um atacante enviar à vítima um link apontando
+    /// para o site dele (e roubar o token).
+    /// </summary>
+    private string? UrlPublica()
+    {
+        var url = config["App:UrlPublica"]?.TrimEnd('/');
+        if (!string.IsNullOrWhiteSpace(url)) return url;
+        return env.IsDevelopment() || env.IsEnvironment("Testes") ? $"{Request.Scheme}://{Request.Host}" : null;
+    }
+
+    /// <summary>
+    /// "Esqueci minha senha": responde SEMPRE a mesma coisa, exista ou não a conta, e o e-mail sai em segundo plano
+    /// (o tempo de resposta também não denuncia quem tem cadastro).
+    /// </summary>
+    [HttpPost("esqueci-senha"), EnableRateLimiting("auth")]
+    public async Task<IActionResult> EsqueciSenha(EsqueciSenhaRequest req)
+    {
+        var resposta = Ok(new { mensagem = MsgEsqueci });
+        var baseUrl = UrlPublica();
+        if (baseUrl is null)
+        {
+            logger.LogError("App:UrlPublica não configurada: não é possível enviar o link de troca de senha.");
+            return resposta;
+        }
+
+        var user = await users.FindByEmailAsync(req.Email.Trim());
+        if (user is null) return resposta;
+
+        var token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(await users.GeneratePasswordResetTokenAsync(user)));
+        var link = $"{baseUrl}/redefinir-senha?email={Uri.EscapeDataString(user.Email!)}&token={token}";
+        var nome = WebUtility.HtmlEncode(user.NomeCompleto);
+        var temSenha = await users.HasPasswordAsync(user);
+        var acao = temSenha ? "criar uma nova senha" : "criar uma senha (hoje você entra pelo Google)";
+        var linkHtml = WebUtility.HtmlEncode(link);
+
+        var html =
+            $"<p>Olá, {nome}.</p>" +
+            $"<p>Recebemos um pedido para {acao} na sua conta do Controle Financeiro.</p>" +
+            $"<p><a href=\"{linkHtml}\">Clique aqui para continuar</a>. O link vale por 1 hora e só pode ser usado uma vez.</p>" +
+            "<p>Se não foi você, ignore este e-mail: sua senha continua a mesma.</p>";
+        var texto =
+            $"Olá, {user.NomeCompleto}.\n\nRecebemos um pedido para {acao} na sua conta do Controle Financeiro.\n\n" +
+            $"Abra este link (vale por 1 hora e só pode ser usado uma vez):\n{link}\n\n" +
+            "Se não foi você, ignore este e-mail: sua senha continua a mesma.";
+        emails.Enfileirar(new Email(user.Email!, "Troca de senha — Controle Financeiro", html, texto));
+        return resposta;
+    }
+
+    [HttpPost("redefinir-senha"), EnableRateLimiting("auth")]
+    public async Task<IActionResult> RedefinirSenha(RedefinirSenhaRequest req)
+    {
+        var user = await users.FindByEmailAsync(req.Email.Trim());
+        if (user is null) return BadRequest(new { mensagem = MsgLinkInvalido });
+
+        string token;
+        try { token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(req.Token)); }
+        catch (FormatException) { return BadRequest(new { mensagem = MsgLinkInvalido }); }
+
+        var result = await users.ResetPasswordAsync(user, token, req.NovaSenha);
+        if (!result.Succeeded)
+        {
+            if (result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.InvalidToken)))
+                return BadRequest(new { mensagem = MsgLinkInvalido });
+            return BadRequest(new { mensagem = string.Join(" ", result.Errors.Select(e => e.Description).Distinct()) });
+        }
+
+        // Quem abriu o link provou que é dono do e-mail; a troca também desbloqueia a conta. O ResetPassword já troca
+        // o "security stamp", o que derruba as sessões abertas com a senha antiga.
+        user.EmailConfirmed = true;
+        await users.UpdateAsync(user);
+        await users.SetLockoutEndDateAsync(user, null);
+        await users.ResetAccessFailedCountAsync(user);
+        return NoContent();
     }
 
     [HttpPost("sair")]

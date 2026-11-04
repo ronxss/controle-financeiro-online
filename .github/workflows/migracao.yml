@@ -1,0 +1,34 @@
+name: Gerar migration do banco
+
+# Cria uma migration do EF Core sem precisar do .NET instalado na sua máquina:
+#   git push origin HEAD:gerar-migracao/NomeDaMigration
+# O workflow gera os arquivos em Data/Migrations e faz commit no MESMO branch. Depois é só trazer o commit
+# (git pull) e juntar ao branch de trabalho.
+on:
+  push:
+    branches: ['gerar-migracao/**']
+
+permissions:
+  contents: write
+
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Gera a migration
+        run: |
+          set -e
+          NOME="${GITHUB_REF_NAME#gerar-migracao/}"
+          dotnet tool install --global dotnet-ef --version "10.*"
+          dotnet build -c Release -p:SkipClientBuild=true
+          dotnet ef migrations add "$NOME" --no-build --configuration Release --output-dir Data/Migrations
+          git config user.name "ci"
+          git config user.email "ci@users.noreply.github.com"
+          git add Data/Migrations
+          git commit -m "Migration $NOME (gerada pelo workflow)" || { echo "nada a gerar"; exit 0; }
+          git push origin "HEAD:$GITHUB_REF_NAME"

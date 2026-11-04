@@ -51,12 +51,18 @@ builder.Services
     .AddErrorDescriber<IdentityErrorDescriberPtBr>()
     .AddDefaultTokenProviders();
 
+// Link de troca de senha por e-mail: vale 1 hora (e deixa de valer assim que a senha muda).
+builder.Services.Configure<DataProtectionTokenProviderOptions>(o => o.TokenLifespan = TimeSpan.FromHours(1));
+
+// "Testes" = ambiente do CI (http://localhost, sem HTTPS), usado pelos testes de contrato.
+var semHttps = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testes");
+
 builder.Services.ConfigureApplicationCookie(o =>
 {
     o.Cookie.Name = "cf.auth";
     o.Cookie.HttpOnly = true;                              // JavaScript não lê o cookie (mitiga XSS)
     o.Cookie.SameSite = SameSiteMode.Strict;               // não é enviado em requisições de outros sites (mitiga CSRF)
-    o.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+    o.Cookie.SecurePolicy = semHttps
         ? CookieSecurePolicy.SameAsRequest   // permite http://localhost no desenvolvimento
         : CookieSecurePolicy.Always;         // em produção o cookie só trafega por HTTPS
     o.ExpireTimeSpan = TimeSpan.FromHours(8);
@@ -70,6 +76,7 @@ builder.Services.ConfigureApplicationCookie(o =>
 builder.Services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval = TimeSpan.FromMinutes(1));
 
 // ---------- Limite de requisições nos endpoints de autenticação ----------
+var limiteAuth = builder.Configuration.GetValue("App:LimiteAuthPorMinuto", 10);
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -79,8 +86,14 @@ builder.Services.AddRateLimiter(o =>
     // a cada tentativa e anularia o limite.
     o.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(
         $"{ctx.Connection.RemoteIpAddress?.ToString() ?? "local"}|{ctx.GetEndpoint()?.DisplayName ?? "?"}",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = limiteAuth, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
+
+// ---------- Serviços do app ----------
+builder.Services.AddSingleton<Relogio>();                 // "hoje" no fuso do usuário (App:FusoHorario)
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.AddSingleton<FilaEmails>();
+builder.Services.AddHostedService<EnviadorEmails>();      // envia os e-mails em segundo plano
 
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -92,7 +105,7 @@ await using (var scope = app.Services.CreateAsyncScope())
     await DadosIniciais.InicializarBancoAsync(scope.ServiceProvider, app.Logger);
 }
 
-if (!app.Environment.IsDevelopment())
+if (!semHttps)
 {
     app.UseExceptionHandler(a => a.Run(async ctx =>
     {

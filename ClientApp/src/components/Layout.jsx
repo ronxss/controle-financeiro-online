@@ -33,7 +33,7 @@ const LARGURA = 220;
 const ITENS = [
   { caminho: '/', rotulo: 'Resumo', icone: <DashboardIcon /> },
   { caminho: '/lancamentos', rotulo: 'Lançamentos', icone: <ReceiptLongIcon /> },
-  ...(MODO_LOCAL ? [{ caminho: '/cartoes', rotulo: 'Cartões', icone: <CreditCardIcon /> }] : []),
+  { caminho: '/cartoes', rotulo: 'Cartões', icone: <CreditCardIcon /> },
   { caminho: '/orcamento', rotulo: 'Orçamento', icone: <SavingsIcon /> },
   { caminho: '/cadastros', rotulo: 'Cadastros', icone: <TuneIcon /> },
 ];
@@ -141,17 +141,17 @@ export default function Layout({ children }) {
                 <ListItemIcon><NotificationsIcon fontSize="small" /></ListItemIcon>Lembretes e backup
               </MenuItem>
             )}
-            {MODO_LOCAL && (
+            {(
               <MenuItem onClick={aoExportar}>
                 <ListItemIcon><FileDownloadIcon fontSize="small" /></ListItemIcon>Exportar backup
               </MenuItem>
             )}
-            {MODO_LOCAL && (
+            {(
               <MenuItem onClick={() => { setAncora(null); setCsvAberto(true); }}>
                 <ListItemIcon><GridOnIcon fontSize="small" /></ListItemIcon>Exportar planilha (CSV)
               </MenuItem>
             )}
-            {MODO_LOCAL && (
+            {(
               <MenuItem onClick={() => { setAncora(null); seletorArquivo.current?.click(); }}>
                 <ListItemIcon><FileUploadIcon fontSize="small" /></ListItemIcon>Importar backup
               </MenuItem>
@@ -214,15 +214,15 @@ export default function Layout({ children }) {
       )}
 
       <SenhaDialog open={senhaAberta} onClose={() => setSenhaAberta(false)} />
-      {MODO_LOCAL && <ExportarCsvDialog open={csvAberto} mes={mes} onClose={() => setCsvAberto(false)} onAviso={setAviso} />}
+      {<ExportarCsvDialog open={csvAberto} mes={mes} onClose={() => setCsvAberto(false)} onAviso={setAviso} />}
       {MODO_LOCAL && <ConfigAparelhoDialog open={configAberta} onClose={() => setConfigAberta(false)} onExportar={aoExportar} />}
 
-      {MODO_LOCAL && (
+      {(
         <input ref={seletorArquivo} type="file" accept="application/json,.json" hidden onChange={aoEscolherArquivo} />
       )}
       <ConfirmDialog
         open={backupPendente !== null} titulo="Importar backup?" rotuloConfirmar="Substituir dados"
-        texto="Todos os dados atuais deste aparelho serão substituídos pelos do arquivo. Se quiser guardá-los, exporte um backup antes."
+        texto={`Todos os dados atuais ${MODO_LOCAL ? 'deste aparelho' : 'desta conta'} serão substituídos pelos do arquivo. Se quiser guardá-los, exporte um backup antes.`}
         onConfirmar={confirmarImportacao} onCancelar={() => setBackupPendente(null)}
       />
       <Snackbar open={Boolean(aviso)} autoHideDuration={6000} onClose={() => setAviso('')} message={aviso} />

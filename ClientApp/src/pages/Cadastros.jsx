@@ -9,7 +9,6 @@ import { api } from '../api.js';
 import { useCadastros } from '../hooks.js';
 import NomeDialog from '../components/NomeDialog.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
-import { MODO_LOCAL } from '../modo.js';
 
 /** Equivale à aba "Listas" da planilha: categorias e contas editáveis. */
 export default function Cadastros() {
@@ -27,7 +26,7 @@ export default function Cadastros() {
   const salvar = async ({ nome, tipo, cartao }) => {
     let corpo = { nome };
     if (ehCategoria) corpo = { nome, tipo };
-    else if (MODO_LOCAL) corpo = { nome, cartao }; // cartão de crédito existe só no modo local
+    else corpo = { nome, cartao };
     if (dialog.item) await api.put(`${base}/${dialog.item.id}`, corpo);
     else await api.post(base, corpo);
     await recarregar();
@@ -105,7 +104,7 @@ export default function Cadastros() {
       </Card>
 
       <NomeDialog
-        open={dialog.aberto} comTipo={ehCategoria} comCartao={MODO_LOCAL && !ehCategoria}
+        open={dialog.aberto} comTipo={ehCategoria} comCartao={!ehCategoria}
         titulo={`${dialog.item ? 'Editar' : 'Nova'} ${rotulo}`}
         valorInicial={dialog.item} onClose={() => setDialog({ aberto: false, item: null })} onSalvar={salvar}
       />

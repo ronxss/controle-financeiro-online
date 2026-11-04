@@ -7,6 +7,23 @@ import { montarBackup, lerBackup, hojeISO, gerarCsv } from './engine.js';
 import { lerEstadoAtual, substituirEstado, requestLocal } from './localApi.js';
 import { Capacitor } from '@capacitor/core';
 import { exportarNoAparelho } from './exportarNativo.js';
+import { MODO_LOCAL } from '../modo.js';
+
+// ---------- Modo online: o servidor guarda os dados; aqui só baixamos/enviamos os arquivos ----------
+
+async function pedirServidor(metodo, url, corpo) {
+  const r = await fetch(url, {
+    method: metodo, credentials: 'same-origin', body: corpo,
+    headers: { 'X-Requested-With': 'XMLHttpRequest', ...(corpo ? { 'Content-Type': 'application/json' } : {}) },
+  });
+  if (!r.ok) {
+    let msg = 'Não foi possível concluir a operação.';
+    try { const j = await r.json(); msg = j.mensagem || Object.values(j.errors ?? {}).flat()[0] || msg; } catch { /* sem corpo */ }
+    if (r.status === 401) window.dispatchEvent(new Event('auth:expirou'));
+    throw new Error(msg);
+  }
+  return r;
+}
 
 function baixar(arquivo) {
   const url = URL.createObjectURL(arquivo);
@@ -27,6 +44,10 @@ function baixar(arquivo) {
  * - Computador: baixa o arquivo ('baixado').
  */
 export async function exportarBackup() {
+  if (!MODO_LOCAL) {
+    const texto = await (await pedirServidor('GET', '/api/backup')).text();
+    return entregarArquivo(`controle-financeiro-backup-${hojeISO()}.json`, texto, 'application/json', 'Backup do Controle Financeiro');
+  }
   const r = await gerarBackup();
   if (r.resultado !== 'cancelado') {
     // Anota a data para o lembrete de backup (falhar aqui não desfaz o backup).
@@ -84,8 +105,20 @@ export async function entregarArquivo(nome, texto, tipo, titulo) {
 
 /** Planilha (CSV) dos lançamentos do período. `de`/`ate` em aaaa-mm-dd (opcionais). */
 export async function exportarCsv({ de = null, ate = null, sufixo = 'tudo' } = {}) {
-  const estado = await lerEstadoAtual();
-  const { texto, quantidade } = gerarCsv(estado, { de, ate });
+  let texto;
+  let quantidade;
+  if (MODO_LOCAL) {
+    ({ texto, quantidade } = gerarCsv(await lerEstadoAtual(), { de, ate }));
+  } else {
+    const qs = new URLSearchParams();
+    if (de) qs.set('de', de);
+    if (ate) qs.set('ate', ate);
+    const r = await pedirServidor('GET', `/api/exportar/csv?${qs}`);
+    quantidade = Number(r.headers.get('X-Quantidade') ?? 0);
+    texto = await r.text();
+    // response.text() descarta a marca BOM; sem ela o Excel erra os acentos.
+    if (!texto.startsWith('\uFEFF')) texto = `\uFEFF${texto}`;
+  }
   if (quantidade === 0) return { resultado: 'vazio', salvoEm: null, quantidade };
   const r = await entregarArquivo(`controle-financeiro-${sufixo}.csv`, texto, 'text/csv', 'Planilha do Controle Financeiro');
   return { ...r, quantidade };
@@ -98,5 +131,10 @@ export function conferirBackup(texto) {
 
 /** Substitui TODOS os dados do aparelho pelo conteúdo do backup. */
 export async function importarBackup(texto) {
-  await substituirEstado(lerBackup(texto));
+  const estado = lerBackup(texto); // valida aqui também, para mensagens imediatas
+  if (MODO_LOCAL) {
+    await substituirEstado(estado);
+    return;
+  }
+  await pedirServidor('POST', '/api/backup/importar', texto);
 }

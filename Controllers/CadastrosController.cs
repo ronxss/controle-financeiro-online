@@ -86,9 +86,20 @@ public class ContasController(AppDbContext db) : ApiBase
         var itens = await db.Contas.AsNoTracking()
             .Where(c => c.UserId == userId)
             .OrderBy(c => c.Nome)
-            .Select(c => new ContaDto(c.Id, c.Nome))
+            .Select(c => new { c.Id, c.Nome, c.CartaoFechamento, c.CartaoVencimento })
             .ToListAsync();
-        return Ok(itens);
+        return Ok(itens.Select(c => Dto(c.Id, c.Nome, c.CartaoFechamento, c.CartaoVencimento)));
+    }
+
+    private static ContaDto Dto(int id, string nome, int? fechamento, int? vencimento) =>
+        new(id, nome, fechamento.HasValue && vencimento.HasValue ? new CartaoDto(fechamento.Value, vencimento.Value) : null);
+
+    /// <summary>Valida o cartão informado. Devolve a mensagem de erro, ou null se estiver ok (ou não informado).</summary>
+    private static string? ValidarCartao(ContaRequest req)
+    {
+        if (!req.CartaoInformado || req.Cartao is null) return null;
+        return Services.Regras.DiaCartaoValido(req.Cartao.Fechamento) && Services.Regras.DiaCartaoValido(req.Cartao.Vencimento)
+            ? null : Services.Regras.MsgCartao;
     }
 
     [HttpPost]
@@ -96,27 +107,36 @@ public class ContasController(AppDbContext db) : ApiBase
     {
         var userId = UserId;
         var nome = req.Nome.Trim();
+        if (string.IsNullOrEmpty(nome)) return Erro("Informe o nome.");
+        if (ValidarCartao(req) is string erroCartao) return Erro(erroCartao);
         if (await db.Contas.AnyAsync(c => c.UserId == userId && c.Nome == nome))
             return Conflito("Já existe uma conta com esse nome.");
 
-        var c = new Conta { UserId = userId, Nome = nome };
+        var c = new Conta { UserId = userId, Nome = nome, CartaoFechamento = req.Cartao?.Fechamento, CartaoVencimento = req.Cartao?.Vencimento };
         db.Contas.Add(c);
         await db.SaveChangesAsync();
-        return Ok(new ContaDto(c.Id, c.Nome));
+        return Ok(Dto(c.Id, c.Nome, c.CartaoFechamento, c.CartaoVencimento));
     }
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Atualizar(int id, ContaRequest req)
     {
         var userId = UserId;
+        var nome = req.Nome.Trim();
+        if (string.IsNullOrEmpty(nome)) return Erro("Informe o nome.");
+        if (ValidarCartao(req) is string erroCartao) return Erro(erroCartao);
         var c = await db.Contas.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId);
         if (c is null) return NaoEncontrado();
 
-        var nome = req.Nome.Trim();
         if (await db.Contas.AnyAsync(x => x.UserId == userId && x.Nome == nome && x.Id != id))
             return Conflito("Já existe uma conta com esse nome.");
 
         c.Nome = nome;
+        if (req.CartaoInformado) // cliente que não manda "cartao" não apaga a configuração
+        {
+            c.CartaoFechamento = req.Cartao?.Fechamento;
+            c.CartaoVencimento = req.Cartao?.Vencimento;
+        }
         await db.SaveChangesAsync();
         return NoContent();
     }

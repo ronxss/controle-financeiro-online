@@ -3,6 +3,7 @@ import { Alert, AlertTitle, Box, Button, Snackbar, Stack, Typography } from '@mu
 import { api } from '../api.js';
 import { brl, dataBR } from '../utils/format.js';
 import { exportarBackup, mensagemExportacao } from '../local/backup.js';
+import { MODO_LOCAL } from '../modo.js';
 
 const MAX_ITENS = 5;
 
@@ -77,7 +78,9 @@ export default function AvisosResumo({ onMudou }) {
   };
 
   if (!d) return null;
-  const { atrasados, proximos, totais, backup } = d;
+  const { atrasados, proximos, totais } = d;
+  // Online, os dados ficam no servidor (com backup do banco): o lembrete de backup é só do app local.
+  const backup = MODO_LOCAL ? d.backup : { atrasado: false };
   if (atrasados.length === 0 && proximos.length === 0 && !backup.atrasado) return <Snackbar open={Boolean(msg)} autoHideDuration={4000} onClose={() => setMsg('')} message={msg} />;
 
   return (
