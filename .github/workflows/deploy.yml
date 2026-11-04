@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # só para gravar o resultado no branch ci-resultados
 
 concurrency:
   group: deploy
@@ -77,3 +77,21 @@ jobs:
           done
           echo "::error::O site não respondeu depois do deploy. Veja os logs em Monitoring -> Log stream no portal do Azure."
           exit 1
+
+      - name: Grava o resultado no branch ci-resultados
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOME: ${{ vars.AZURE_WEBAPP_NAME }}
+          RESULTADO: ${{ job.status }}
+        run: |
+          git config --global user.name "ci"
+          git config --global user.email "ci@users.noreply.github.com"
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone -q --depth 1 --branch ci-resultados "$url" res || exit 0
+          mkdir -p res/deploy
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://${NOME}.azurewebsites.net/api/auth/config" || true)
+          printf 'commit=%s\nresultado=%s\npulado=%s\nhttp=%s\nrun=%s/%s/actions/runs/%s\n' \
+            "$GITHUB_SHA" "$RESULTADO" "${PULAR:-nao}" "$code" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > res/deploy/status.txt
+          cd res && git add -A && git commit -q -m "deploy ${GITHUB_SHA::7}: ${RESULTADO}" || exit 0
+          for i in 1 2 3; do git push -q origin ci-resultados && exit 0; git pull -q --rebase origin ci-resultados || true; done

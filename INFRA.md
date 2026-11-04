@@ -40,6 +40,10 @@ az deployment group create \
 - `prefixo`: só letras minúsculas e números, único no Azure (ex.: `cfronxss`). O site fica em `https://SEUPREFIXO-app.azurewebsites.net`.
 - `sqlSenha`: 12 ou mais caracteres com maiúscula, minúscula, número e símbolo. Guarde num gerenciador de senhas.
 - E-mail é opcional. Sem ele, o site funciona, mas "Esqueci minha senha" não envia nada (veja o passo 4).
+- Se aparecer **SubscriptionIsOverQuotaForSku** ("Current Limit (F1 VMs): 0"): algumas assinaturas novas nascem com cota 0 de App Service.
+  Mude a assinatura para *pagamento conforme o uso* (o F1 e o banco grátis continuam sem custo; crie um orçamento com alerta em
+  Gerenciamento de Custos) e, se ainda faltar cota, troque o parâmetro `local` para outra região. Neste projeto funcionou com `local=westus3`.
+  A última saída é um chamado de suporte gratuito: Ajuda + suporte → Limites de serviço e assinatura (cotas) → App Service.
 - Se aparecer erro de **runtime** (`DOTNETCORE|10.0` indisponível na região), rode `az webapp list-runtimes --os linux | grep DOTNET` e repita com `--parameters runtime='DOTNETCORE|<versão listada>'`.
 
 Se for usar login com Google, acrescente `googleClientId=SEU_CLIENT_ID` e, no Google Cloud Console, inclua `https://SEUPREFIXO-app.azurewebsites.net` nas **Origens JavaScript autorizadas**.
