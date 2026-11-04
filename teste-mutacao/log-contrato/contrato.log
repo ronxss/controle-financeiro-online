@@ -1,0 +1,64 @@
+ok - cadastros e cartão (12 passos)
+ok - lançamentos, fixas e filtros (19 passos)
+FALHOU - parcelas
+[parcelas] passo 4 (GET /api/lancamentos?mes=2026-11) difere do motor local
++ actual - expected
+... Skipped lines
+
+  {
+    corpo: [
+      {
+        categoria: 'Alimentação',
+        categoriaId: 'cat#1',
+...
+        tipo: 'Despesa',
++       valor: 333.33
+-       valor: 333.34
+      }
+    ],
+    status: 200
+  }
+
+
+ok - copiar fixas (10 passos)
+FALHOU - resumo, orçamento e painel
+[resumo, orçamento e painel] passo 14 (GET /api/dashboard?mes=2026-11) difere do motor local
++ actual - expected
+... Skipped lines
+
+  {
+    corpo: {
+      comparativo: {
+        despesasPagasMesAnterior: 2000,
+        receitasRecebidasMesAnterior: 4800,
+...
+            realizado: 1600,
++           situacao: 'ok'
+-           situacao: 'alerta'
+          },
+          {
+            categoria: 'Alimentação',
+            categoriaId: 'cat#1',
+            disponivel: 200,
+...
+        disponivel: 550,
++       emAlerta: 0,
+-       emAlerta: 1,
+        estouradas: 1,
+        limiteTotal: 2600,
+        percentual: 78.8,
+        realizado: 2050,
+        semLimiteRealizado: 50
+
+
+ok - cartões e faturas (21 passos)
+ok - metas (23 passos)
+ok - configurações, lembretes e registro de backup (18 passos)
+ok - backup do app local importado no servidor
+ok - CSV idêntico
+ok - backup do servidor abre no app local
+ok - backup inválido recusado sem perder dados
+ok - troca de senha por e-mail
+ok - um usuário não vê nem altera dados de outro
+
+2 grupo(s) com falha
