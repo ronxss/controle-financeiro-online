@@ -8,6 +8,7 @@ public static class Periodo
     public static bool TentarObter(string? mes, DateOnly hoje, out DateOnly inicio, out DateOnly fim)
     {
         fim = default;
+        inicio = default;
         if (string.IsNullOrWhiteSpace(mes))
         {
             inicio = new DateOnly(hoje.Year, hoje.Month, 1);
