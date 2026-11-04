@@ -45,9 +45,9 @@ export default function Resumo() {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h5" fontWeight={700}>Resumo do mês</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/lancamentos?novo=1')}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1.5}>
+        <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' }, minWidth: 0 }}>Resumo do mês</Typography>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/lancamentos?novo=1')} sx={{ flexShrink: 0 }}>
           Novo lançamento
         </Button>
       </Stack>
