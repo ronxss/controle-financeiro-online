@@ -129,8 +129,12 @@ async function rodar(nome, cenario) {
     });
     await cenario({ p, ids, cliente });
   }
-  for (let i = 0; i < Math.max(obs.srv.length, obs.mot.length); i += 1) {
-    assert.deepEqual(obs.srv[i], obs.mot[i], `[${nome}] passo ${i + 1} (${obs.mot[i]?.passo}) difere do motor local`);
+  assert.equal(obs.srv.length, obs.mot.length, `[${nome}] quantidade de passos difere`);
+  for (let i = 0; i < obs.mot.length; i += 1) {
+    // O rótulo do passo tem o id cru da URL (diferente em cada lado); compara só status e corpo.
+    const { passo, ...esperado } = obs.mot[i];
+    const { passo: _p, ...obtido } = obs.srv[i];
+    assert.deepEqual(obtido, esperado, `[${nome}] passo ${i + 1} (${passo}) difere do motor local`);
   }
   console.log(`ok - ${nome} (${obs.mot.length} passos)`);
 }
