@@ -17,6 +17,12 @@ export const NOME_SECAO = {
 
 export const NOME_TIPO = { barras: 'Barras', pizza: 'Pizza', rosca: 'Rosca', linhas: 'Linhas', lista: 'Lista', cartoes: 'Cartões' };
 
+const CHAVE = 'painel-preferencias';
+const lerGuardado = () => { try { return JSON.parse(localStorage.getItem(CHAVE)) || null; } catch { return null; } };
+const guardar = (p) => { try { localStorage.setItem(CHAVE, JSON.stringify(p)); } catch { /* sem armazenamento: vale só nesta sessão */ } };
+// Servidor sem a rota /api/config (versão antiga): a preferência fica só neste navegador.
+const semRota = (e) => e?.status === 404 || e?.status === 405;
+
 /**
  * Preferências do painel (seções visíveis e tipo de gráfico), gravadas em /api/config.
  * A tela muda na hora; se o servidor recusar, volta ao que estava e avisa por `onErro`.
@@ -28,7 +34,8 @@ export function usePainel(onErro) {
 
   useEffect(() => {
     let vivo = true;
-    api.get('/api/config').then((c) => { if (vivo && c?.painel) setPainel({ ...painelPadrao(), ...c.painel }); }).catch(() => {});
+    const local = () => { const g = lerGuardado(); if (vivo && g) setPainel({ ...painelPadrao(), ...g }); };
+    api.get('/api/config').then((c) => { if (!vivo) return; if (c?.painel) setPainel({ ...painelPadrao(), ...c.painel }); else local(); }).catch(local);
     return () => { vivo = false; };
   }, []);
 
@@ -38,8 +45,12 @@ export function usePainel(onErro) {
     for (const [id, m] of Object.entries(mudancas)) depois[id] = { ...antes[id], ...m };
     setPainel(depois);
     api.put('/api/config', { painel: mudancas })
-      .then((c) => { if (c?.painel) setPainel(c.painel); })
-      .catch((e) => { setPainel(antes); onErro?.(e.message || 'Não foi possível salvar a preferência.'); });
+      .then((c) => { if (c?.painel) setPainel(c.painel); else guardar(depois); })
+      .catch((e) => {
+        if (semRota(e)) { guardar(depois); return; }
+        setPainel(antes);
+        onErro?.(e.message || 'Não foi possível salvar a preferência.');
+      });
   }, [onErro]);
 
   return [painel, alterar];
