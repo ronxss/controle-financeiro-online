@@ -1,5 +1,5 @@
   Determining projects to restore...
-  Restored /home/runner/work/controle-financeiro-online/controle-financeiro-online/ControleFinanceiro.csproj (in 2.46 sec).
+  Restored /home/runner/work/controle-financeiro-online/controle-financeiro-online/ControleFinanceiro.csproj (in 3.32 sec).
 /home/runner/work/controle-financeiro-online/controle-financeiro-online/Services/Periodo.cs(18,13): error CS0177: The out parameter 'inicio' must be assigned to before control leaves the current method [/home/runner/work/controle-financeiro-online/controle-financeiro-online/ControleFinanceiro.csproj]
 /home/runner/work/controle-financeiro-online/controle-financeiro-online/Services/Email.cs(89,87): warning CS8604: Possible null reference argument for parameter 'password' in 'Task MailService.AuthenticateAsync(string userName, string password, CancellationToken cancellationToken = default(CancellationToken))'. [/home/runner/work/controle-financeiro-online/controle-financeiro-online/ControleFinanceiro.csproj]
 
@@ -10,4 +10,4 @@ Build FAILED.
     1 Warning(s)
     1 Error(s)
 
-Time Elapsed 00:00:07.55
+Time Elapsed 00:00:07.87
