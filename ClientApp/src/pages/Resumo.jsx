@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Box, Button, Card, CardContent, LinearProgress, Skeleton, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, LinearProgress, Skeleton, Snackbar, Stack, Typography } from '@mui/material';
+import TuneIcon from '@mui/icons-material/Tune';
 import AddIcon from '@mui/icons-material/Add';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
@@ -12,6 +13,13 @@ import { brl } from '../utils/format.js';
 import { TEM_FIXAS } from '../modo.js';
 import AvisosResumo from '../components/AvisosResumo.jsx';
 import PainelResumo from '../components/PainelResumo.jsx';
+import SecaoPainel from '../components/SecaoPainel.jsx';
+import GraficoPizza from '../components/GraficoPizza.jsx';
+import PersonalizarPainel from '../components/PersonalizarPainel.jsx';
+import { SECOES_PAINEL, usePainel } from '../painel.js';
+
+// Seções que esta tela mostra (sem as métricas de fixas, só existem as duas primeiras).
+const IDS = TEM_FIXAS ? Object.keys(SECOES_PAINEL) : ['indicadores', 'despesasCategoria'];
 
 function Indicador({ titulo, valor, icone, cor }) {
   return (
@@ -33,6 +41,10 @@ export default function Resumo() {
   const [r, setR] = useState(null);
   const [erro, setErro] = useState('');
   const [versao, setVersao] = useState(0); // muda quando um aviso marca algo como pago: recarrega os números
+  const [msg, setMsg] = useState('');
+  const [personalizar, setPersonalizar] = useState(false);
+  const [painel, alterar] = usePainel(useCallback((m) => setMsg(m), []));
+  const ocultas = IDS.filter((id) => !painel[id].visivel).length;
 
   useEffect(() => {
     if (versao === 0) setR(null);
@@ -56,23 +68,37 @@ export default function Resumo() {
       {erro && <Alert severity="error">{erro}</Alert>}
       {vazio && <Alert severity="info">Nenhum lançamento neste mês ainda. Clique em “Novo lançamento” para começar.</Alert>}
 
-      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' } }}>
+      <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={1} sx={{ mt: -1.5 }}>
+        {ocultas > 0 && (
+          <Typography variant="body2" color="text.secondary">
+            {ocultas === 1 ? '1 seção oculta' : `${ocultas} seções ocultas`}
+          </Typography>
+        )}
+        <Button size="small" startIcon={<TuneIcon />} onClick={() => setPersonalizar(true)}>Personalizar painel</Button>
+      </Stack>
+
+      {painel.indicadores.visivel && <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' } }}>
         <Indicador titulo="Receitas recebidas" valor={r?.receitasRecebidas} cor="success.main" icone={<TrendingUpIcon fontSize="small" />} />
         <Indicador titulo="Despesas pagas" valor={r?.despesasPagas} cor="error.main" icone={<TrendingDownIcon fontSize="small" />} />
         <Indicador titulo="Saldo realizado" valor={r?.saldoRealizado} cor={r && r.saldoRealizado < 0 ? 'error.main' : 'primary.main'} icone={<AccountBalanceIcon fontSize="small" />} />
         <Indicador titulo="Receitas pendentes" valor={r?.receitasPendentes} icone={<HourglassEmptyIcon fontSize="small" />} />
         <Indicador titulo="Despesas pendentes" valor={r?.despesasPendentes} icone={<HourglassEmptyIcon fontSize="small" />} />
         <Indicador titulo="Saldo previsto (com pendentes)" valor={r?.saldoPrevisto} cor={r && r.saldoPrevisto < 0 ? 'error.main' : undefined} icone={<AccountBalanceIcon fontSize="small" />} />
-      </Box>
+      </Box>}
 
-      <Card>
-        <CardContent>
-          <Typography variant="h6" fontWeight={500} gutterBottom>Despesas por categoria</Typography>
+      {painel.despesasCategoria.visivel && (
+        <SecaoPainel id="despesasCategoria" pref={painel.despesasCategoria} onAlterar={alterar}>
           {!r && <Skeleton variant="rounded" height={120} />}
           {r && visiveis.length === 0 && (
             <Typography color="text.secondary">Nenhuma despesa paga neste mês.</Typography>
           )}
-          <Stack spacing={2}>
+          {visiveis.length > 0 && painel.despesasCategoria.tipo !== 'barras' && (
+            <GraficoPizza
+              fatias={visiveis.map((x) => ({ rotulo: x.categoria, valor: x.realizado }))}
+              rosca={painel.despesasCategoria.tipo === 'rosca'} titulo="Despesas pagas por categoria" rotuloTotal="Despesas pagas"
+            />
+          )}
+          {painel.despesasCategoria.tipo === 'barras' && <Stack spacing={2}>
             {visiveis.map((x) => {
               const pct = totalDespesas ? (x.realizado / totalDespesas) * 100 : 0;
               return (
@@ -87,11 +113,20 @@ export default function Resumo() {
                 </Box>
               );
             })}
-          </Stack>
-        </CardContent>
-      </Card>
+          </Stack>}
+        </SecaoPainel>
+      )}
 
-      {TEM_FIXAS && <PainelResumo mes={mes} versao={versao} />}
+      {TEM_FIXAS && <PainelResumo mes={mes} versao={versao} painel={painel} onAlterar={alterar} />}
+
+      {ocultas === IDS.length && (
+        <Alert severity="info" action={<Button color="inherit" size="small" onClick={() => setPersonalizar(true)}>Mostrar</Button>}>
+          Todas as seções do painel estão ocultas.
+        </Alert>
+      )}
+
+      <PersonalizarPainel aberto={personalizar} onFechar={() => setPersonalizar(false)} painel={painel} onAlterar={alterar} ids={IDS} />
+      <Snackbar open={Boolean(msg)} autoHideDuration={4000} onClose={() => setMsg('')} message={msg} />
     </Stack>
   );
 }

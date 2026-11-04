@@ -1,27 +1,46 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Box, Card, CardContent, Chip, LinearProgress, Skeleton, Snackbar, Stack, Typography } from '@mui/material';
+import { Alert, Box, Chip, LinearProgress, Skeleton, Snackbar, Stack, Typography } from '@mui/material';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { api } from '../api.js';
 import { brl, dataBR, pct } from '../utils/format.js';
 import GraficoBarras from './GraficoBarras.jsx';
+import GraficoPizza from './GraficoPizza.jsx';
+import SecaoPainel from './SecaoPainel.jsx';
 import CopiarFixas from './CopiarFixas.jsx';
+import { painelPadrao } from '../local/engine.js';
 
 const COR = { ok: 'success', alerta: 'warning', estourado: 'error', semLimite: 'inherit' };
 const ROTULO = { ok: 'Dentro do limite', alerta: 'Atenção', estourado: 'Estourou', semLimite: 'Sem limite' };
 
-function Secao({ titulo, acao, children }) {
+/** Soma os itens por categoria, do maior para o menor (para pizza/rosca). */
+function porCategoria(itens) {
+  const m = new Map();
+  for (const l of itens) m.set(l.categoria, (m.get(l.categoria) ?? 0) + l.valor);
+  return [...m].map(([rotulo, valor]) => ({ rotulo, valor })).sort((a, b) => b.valor - a.valor || a.rotulo.localeCompare(b.rotulo, 'pt-BR'));
+}
+
+/** Barras horizontais de uma série só (sem legenda: o título da seção diz o que é). */
+function BarrasHorizontais({ itens }) {
+  const maximo = Math.max(1, ...itens.map((l) => l.valor));
   return (
-    <Card>
-      <CardContent>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap' }} useFlexGap>
-          <Typography variant="h6" fontWeight={500}>{titulo}</Typography>
-          {acao}
-        </Stack>
-        {children}
-      </CardContent>
-    </Card>
+    <Stack spacing={1.25}>
+      {itens.map((l) => (
+        <Box key={l.id} title={`${l.descricao} · ${brl(l.valor)}`}>
+          <Stack direction="row" justifyContent="space-between" spacing={1}>
+            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0 }}>
+              {l.fixa && <PushPinIcon sx={{ fontSize: 14 }} color="primary" titleAccess="Fixa" />}
+              <Typography variant="body2" noWrap>{l.descricao}</Typography>
+            </Stack>
+            <Typography variant="body2" fontWeight={500} sx={{ whiteSpace: 'nowrap' }}>{brl(l.valor)}</Typography>
+          </Stack>
+          <Box sx={{ mt: 0.5, height: 8, borderRadius: 1, bgcolor: 'action.hover' }}>
+            <Box sx={{ width: `${Math.max(1.5, (l.valor / maximo) * 100)}%`, height: '100%', borderRadius: 1, bgcolor: 'primary.main' }} />
+          </Box>
+        </Box>
+      ))}
+    </Stack>
   );
 }
 
@@ -61,7 +80,7 @@ function ListaFixos({ titulo, itens, receita = false }) {
 }
 
 /** Métricas de gastos e orçamento do mês (só no modo local). Se a rota não existir, simplesmente não aparece. */
-export default function PainelResumo({ mes, versao = 0 }) {
+export default function PainelResumo({ mes, versao = 0, painel = painelPadrao(), onAlterar }) {
   const [d, setD] = useState(null);
   const [falhou, setFalhou] = useState(false);
   const [erro, setErro] = useState('');
@@ -73,8 +92,11 @@ export default function PainelResumo({ mes, versao = 0 }) {
 
   useEffect(() => { setD(null); carregar(); }, [carregar, versao]);
 
-  if (falhou) return null;
+  const algum = ['orcamento', 'fixas', 'fixasVariaveis', 'evolucao', 'ritmo', 'maioresDespesas'].some((id) => painel[id]?.visivel);
+  if (falhou || !algum) return null;
   if (!d) return <Skeleton variant="rounded" height={220} />;
+  const sec = (id) => ({ id, pref: painel[id], onAlterar });
+  const ver = (id) => painel[id]?.visivel;
 
   const o = d.orcamento;
   const sitTotal = o.limiteTotal <= 0 ? 'semLimite' : o.percentual > 100 ? 'estourado' : o.percentual >= 80 ? 'alerta' : 'ok';
@@ -87,7 +109,7 @@ export default function PainelResumo({ mes, versao = 0 }) {
     <Stack spacing={3}>
       {erro && <Alert severity="error" onClose={() => setErro('')}>{erro}</Alert>}
 
-      <Secao titulo="Orçamento do mês">
+      {ver('orcamento') && <SecaoPainel {...sec('orcamento')}>
         {o.limiteTotal <= 0 ? (
           <Typography color="text.secondary">
             Nenhum limite definido. Defina limites por categoria na tela Orçamento para acompanhar aqui.
@@ -144,9 +166,9 @@ export default function PainelResumo({ mes, versao = 0 }) {
             Mais {brl(o.semLimiteRealizado)} gastos em categorias sem limite (não entram no total acima).
           </Typography>
         )}
-      </Secao>
+      </SecaoPainel>}
 
-      <Secao titulo="Receitas e despesas fixas" acao={<CopiarFixas mes={mes} size="small" onFeito={copiado} onErro={setErro} />}>
+      {ver('fixas') && <SecaoPainel {...sec('fixas')} acao={<CopiarFixas mes={mes} size="small" onFeito={copiado} onErro={setErro} />}>
         {d.receitasFixas.quantidade + d.fixas.quantidade === 0 ? (
           <Typography variant="body2" color="text.secondary">
             Nenhum lançamento fixo neste mês. Marque receitas e despesas que se repetem (ícone de alfinete em
@@ -168,7 +190,17 @@ export default function PainelResumo({ mes, versao = 0 }) {
                 <Typography fontWeight={700} color={d.saldoFixo < 0 ? 'error.main' : 'primary.main'}>{brl(d.saldoFixo)}</Typography>
               </Box>
             </Box>
-            {d.comprometimentoFixo !== null && (
+            {painel.fixas.tipo !== 'barras' && (
+              d.fixas.itens.length === 0
+                ? <Typography variant="body2" color="text.secondary">Nenhuma despesa fixa neste mês.</Typography>
+                : (
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>Despesas fixas por categoria</Typography>
+                    <GraficoPizza fatias={porCategoria(d.fixas.itens)} rosca={painel.fixas.tipo === 'rosca'} titulo="Despesas fixas por categoria" />
+                  </Box>
+                )
+            )}
+            {painel.fixas.tipo === 'barras' && d.comprometimentoFixo !== null && (
               <Box>
                 <Barra
                   valor={d.comprometimentoFixo}
@@ -183,11 +215,16 @@ export default function PainelResumo({ mes, versao = 0 }) {
             <ListaFixos titulo="Despesas fixas" itens={d.fixas.itens} />
           </Stack>
         )}
-      </Secao>
+      </SecaoPainel>}
 
-      <Secao titulo="Despesas fixas × variáveis">
+      {ver('fixasVariaveis') && <SecaoPainel {...sec('fixasVariaveis')}>
         {totalDesp <= 0 ? (
           <Typography color="text.secondary">Nenhuma despesa neste mês.</Typography>
+        ) : painel.fixasVariaveis.tipo !== 'barras' ? (
+          <GraficoPizza
+            fatias={[{ rotulo: 'Fixas', valor: d.fixas.total }, { rotulo: 'Variáveis', valor: d.variaveis.total }]}
+            rosca={painel.fixasVariaveis.tipo === 'rosca'} titulo="Despesas fixas e variáveis do mês" rotuloTotal="Despesas"
+          />
         ) : (
           <Box>
             <Box
@@ -211,18 +248,18 @@ export default function PainelResumo({ mes, versao = 0 }) {
             </Stack>
           </Box>
         )}
-      </Secao>
+      </SecaoPainel>}
 
-      <Secao titulo="Evolução em 6 meses">
-        <GraficoBarras dados={d.evolucao} />
+      {ver('evolucao') && <SecaoPainel {...sec('evolucao')}>
+        <GraficoBarras dados={d.evolucao} tipo={painel.evolucao.tipo} />
         <Stack direction="row" spacing={2} sx={{ mt: 0.5 }} justifyContent="center">
           <Stack direction="row" spacing={0.75} alignItems="center"><Box sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: 'success.main' }} /><Typography variant="caption">Receitas</Typography></Stack>
           <Stack direction="row" spacing={0.75} alignItems="center"><Box sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: 'error.main' }} /><Typography variant="caption">Despesas</Typography></Stack>
         </Stack>
-      </Secao>
+      </SecaoPainel>}
 
-      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' } }}>
-        <Secao titulo="Ritmo de gastos">
+      {(ver('ritmo') || ver('maioresDespesas')) && <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: ver('ritmo') && ver('maioresDespesas') ? 'repeat(2, 1fr)' : '1fr' } }}>
+        {ver('ritmo') && <SecaoPainel {...sec('ritmo')}>
           <Stack spacing={1}>
             <Stack direction="row" justifyContent="space-between"><Typography color="text.secondary">Média por dia</Typography><Typography fontWeight={500}>{brl(d.ritmo.mediaDiaria)}</Typography></Stack>
             {d.ritmo.projecaoDespesas !== null && (
@@ -244,11 +281,13 @@ export default function PainelResumo({ mes, versao = 0 }) {
               )}
             </Stack>
           </Stack>
-        </Secao>
+        </SecaoPainel>}
 
-        <Secao titulo="Maiores despesas">
+        {ver('maioresDespesas') && <SecaoPainel {...sec('maioresDespesas')}>
           {d.maioresDespesas.length === 0 ? (
             <Typography color="text.secondary">Nenhuma despesa neste mês.</Typography>
+          ) : painel.maioresDespesas.tipo === 'barras' ? (
+            <BarrasHorizontais itens={d.maioresDespesas} />
           ) : (
             <Stack spacing={1.25}>
               {d.maioresDespesas.map((l) => (
@@ -265,8 +304,8 @@ export default function PainelResumo({ mes, versao = 0 }) {
               ))}
             </Stack>
           )}
-        </Secao>
-      </Box>
+        </SecaoPainel>}
+      </Box>}
 
       <Snackbar open={Boolean(msg)} autoHideDuration={4000} onClose={() => setMsg('')} message={msg} />
     </Stack>
