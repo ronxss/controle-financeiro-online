@@ -1,0 +1,20 @@
+info: Microsoft.EntityFrameworkCore.Migrations[20411]
+      Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+info: Microsoft.EntityFrameworkCore.Migrations[20402]
+      Applying migration '20261104213701_Inicial'.
+info: Microsoft.EntityFrameworkCore.Migrations[20402]
+      Applying migration '20261104234407_PainelPreferencias'.
+warn: Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware[16]
+      The WebRootPath was not found: /home/runner/work/controle-financeiro-online/controle-financeiro-online/wwwroot. Static files may be unavailable.
+warn: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager[35]
+      No XML encryptor configured. Key {82436798-c09b-4ed8-8099-97b4f9e58b27} may be persisted to storage in unencrypted form.
+warn: Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware[16]
+      The WebRootPath was not found: /home/runner/work/controle-financeiro-online/controle-financeiro-online/wwwroot. Static files may be unavailable.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5080
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Testes
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/runner/work/controle-financeiro-online/controle-financeiro-online
