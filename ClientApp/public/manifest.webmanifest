@@ -1,7 +1,7 @@
 {
   "name": "Controle Financeiro",
   "short_name": "Finanças",
-  "description": "Receitas, despesas e orçamento mensal. Seus dados ficam só no seu aparelho.",
+  "description": "Receitas, despesas e orçamento mensal. Acesse sua conta de qualquer aparelho.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",
