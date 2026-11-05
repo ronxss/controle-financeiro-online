@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Box, Button, Card, CardContent, InputAdornment, LinearProgress, Paper, Skeleton, Snackbar, Stack, Tab, Table,
+  Alert, Box, Button, Card, CardContent, LinearProgress, Paper, Skeleton, Snackbar, Stack, Tab, Table,
   TableBody, TableCell, TableHead, TableRow, Tabs, TextField, Typography, useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { api } from '../api.js';
 import { useMes } from '../MesContext.jsx';
-import { brl, parseValor } from '../utils/format.js';
+import { brl, parseValor, valorParaCampo } from '../utils/format.js';
+import CampoMoeda from '../components/CampoMoeda.jsx';
 import MetasPainel from '../components/MetasPainel.jsx';
 
 /** Orçamento: limites por categoria e (no modo local) metas de economia, em abas. */
@@ -37,7 +38,7 @@ function Limites({ embutido = false }) {
     try {
       const d = await api.get(`/api/orcamento?mes=${mes}`);
       setItens(d);
-      setLimites(Object.fromEntries(d.map((i) => [i.categoriaId, i.limite ? String(i.limite).replace('.', ',') : ''])));
+      setLimites(Object.fromEntries(d.map((i) => [i.categoriaId, valorParaCampo(i.limite)])));
       setErro('');
     } catch (e) {
       setErro(e.message);
@@ -69,16 +70,13 @@ function Limites({ embutido = false }) {
   };
 
   const campoLimite = (i, largura) => (
-    <TextField
-      size="small" value={limites[i.categoriaId] ?? ''} placeholder="0,00" label={celular ? 'Limite mensal' : undefined}
+    <CampoMoeda
+      size="small" value={limites[i.categoriaId] ?? ''} label={celular ? 'Limite mensal' : undefined}
       fullWidth={Boolean(largura)} sx={largura ? undefined : { minWidth: 150 }}
       error={numero(i.categoriaId) === null}
       helperText={numero(i.categoriaId) === null ? 'Valor inválido. Ex.: 150,90' : undefined}
-      onChange={(e) => setLimites((p) => ({ ...p, [i.categoriaId]: e.target.value }))}
-      slotProps={{
-        input: { startAdornment: <InputAdornment position="start">R$</InputAdornment> },
-        htmlInput: { inputMode: 'decimal', 'aria-label': `Limite de ${i.categoria}` },
-      }}
+      onChange={(v) => setLimites((p) => ({ ...p, [i.categoriaId]: v }))}
+      slotProps={{ htmlInput: { 'aria-label': `Limite de ${i.categoria}` } }}
     />
   );
 

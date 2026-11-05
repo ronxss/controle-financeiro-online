@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert, Box, Button, Card, CardContent, Chip, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
-  InputAdornment, LinearProgress, Skeleton, Snackbar, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography,
+  LinearProgress, Skeleton, Snackbar, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography,
   useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -12,7 +12,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FlagIcon from '@mui/icons-material/Flag';
 import { api } from '../api.js';
-import { brl, dataBR, hojeISO, parseValor } from '../utils/format.js';
+import { brl, dataBR, hojeISO, parseValor, valorParaCampo } from '../utils/format.js';
+import CampoMoeda from './CampoMoeda.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
 
 const SITUACAO = {
@@ -32,7 +33,7 @@ function MetaDialog({ open, meta, onClose, onSalvo }) {
   useEffect(() => {
     if (!open) return;
     setNome(meta?.nome ?? '');
-    setAlvo(meta ? String(meta.alvo).replace('.', ',') : '');
+    setAlvo(meta ? valorParaCampo(meta.alvo) : '');
     setPrazo(meta?.prazo ?? '');
     setErro('');
   }, [open, meta]);
@@ -40,7 +41,7 @@ function MetaDialog({ open, meta, onClose, onSalvo }) {
   const salvar = async () => {
     const v = parseValor(alvo);
     if (!nome.trim()) return setErro('Informe o nome da meta.');
-    if (Number.isNaN(v) || v <= 0) return setErro('Informe um valor-alvo válido. Ex.: 5000 ou 5.000,00');
+    if (Number.isNaN(v) || v <= 0) return setErro('Informe um valor-alvo maior que zero.');
     try {
       const corpo = { nome: nome.trim(), alvo: v, prazo: prazo || null };
       if (meta) await api.put(`/api/metas/${meta.id}`, corpo);
@@ -60,8 +61,7 @@ function MetaDialog({ open, meta, onClose, onSalvo }) {
           {erro && <Alert severity="error">{erro}</Alert>}
           <TextField label="Nome" placeholder="Ex.: Viagem, Reserva de emergência" value={nome} onChange={(e) => setNome(e.target.value)}
             autoFocus slotProps={{ htmlInput: { maxLength: 60 } }} />
-          <TextField label="Quanto quer juntar" value={alvo} onChange={(e) => setAlvo(e.target.value)} placeholder="0,00"
-            slotProps={{ input: { startAdornment: <InputAdornment position="start">R$</InputAdornment> }, htmlInput: { inputMode: 'decimal' } }} />
+          <CampoMoeda label="Quanto quer juntar" value={alvo} onChange={setAlvo} />
           <TextField label="Até quando (opcional)" type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)}
             slotProps={{ inputLabel: { shrink: true } }} helperText="Com prazo, o app calcula quanto guardar por mês." />
         </Stack>
@@ -87,7 +87,7 @@ function AporteDialog({ meta, retirada, onClose, onSalvo }) {
 
   const salvar = async () => {
     const v = parseValor(valor);
-    if (Number.isNaN(v) || v <= 0) return setErro('Informe um valor válido. Ex.: 150,90');
+    if (Number.isNaN(v) || v <= 0) return setErro('Informe um valor maior que zero.');
     try {
       await api.post(`/api/metas/${meta.id}/aportes`, { valor: v, data, nota: nota.trim(), retirada: modo === 'retirada' });
       onSalvo(modo === 'retirada' ? 'Retirada registrada.' : 'Depósito registrado.');
@@ -107,8 +107,7 @@ function AporteDialog({ meta, retirada, onClose, onSalvo }) {
             <ToggleButton value="deposito" color="success">Guardar</ToggleButton>
             <ToggleButton value="retirada" color="error">Retirar</ToggleButton>
           </ToggleButtonGroup>
-          <TextField label="Valor" value={valor} onChange={(e) => setValor(e.target.value)} autoFocus placeholder="0,00"
-            slotProps={{ input: { startAdornment: <InputAdornment position="start">R$</InputAdornment> }, htmlInput: { inputMode: 'decimal' } }} />
+          <CampoMoeda label="Valor" value={valor} onChange={setValor} autoFocus />
           <TextField label="Data" type="date" value={data} onChange={(e) => setData(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
           <TextField label="Observação (opcional)" value={nota} onChange={(e) => setNota(e.target.value)} slotProps={{ htmlInput: { maxLength: 100 } }} />
           <Typography variant="caption" color="text.secondary">

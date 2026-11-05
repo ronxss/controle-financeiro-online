@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, InputAdornment,
+  Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel,
   MenuItem, Stack, Switch, TextField, ToggleButton, ToggleButtonGroup, useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { api } from '../api.js';
-import { brl, dataBR, dataPadrao, parseValor } from '../utils/format.js';
+import { brl, dataBR, dataPadrao, parseValor, valorParaCampo } from '../utils/format.js';
+import CampoMoeda from './CampoMoeda.jsx';
 import { faturaDaCompra } from '../local/engine.js';
 import { TEM_FIXAS } from '../modo.js';
 
@@ -26,7 +27,7 @@ export default function LancamentoDialog({ open, item, categorias, contas, mes, 
       item
         ? {
             tipo: item.tipo,
-            valor: String(item.valor).replace('.', ','),
+            valor: valorParaCampo(item.valor),
             descricao: item.descricao,
             categoriaId: item.categoriaId,
             contaId: item.contaId,
@@ -66,7 +67,7 @@ export default function LancamentoDialog({ open, item, categorias, contas, mes, 
     setErro('');
     setAviso('');
     const valor = parseValor(f.valor);
-    if (Number.isNaN(valor) || valor <= 0) return setErro('Informe um valor válido, maior que zero. Ex.: 150,90');
+    if (Number.isNaN(valor) || valor <= 0) return setErro('Informe um valor maior que zero.');
     if (!f.descricao.trim()) return setErro('Informe uma descrição.');
     if (!f.categoriaId) return setErro('Selecione a categoria.');
     if (!f.contaId) return setErro('Selecione a conta.');
@@ -121,12 +122,8 @@ export default function LancamentoDialog({ open, item, categorias, contas, mes, 
             <ToggleButton value="Receita" color="success">Receita</ToggleButton>
           </ToggleButtonGroup>
 
-          <TextField
-            label="Valor" value={f.valor} onChange={set('valor')} autoFocus placeholder="0,00"
-            slotProps={{
-              input: { startAdornment: <InputAdornment position="start">R$</InputAdornment> },
-              htmlInput: { inputMode: 'decimal' },
-            }}
+          <CampoMoeda
+            label="Valor" value={f.valor} onChange={(valor) => setF((p) => ({ ...p, valor }))} autoFocus
             sx={{ '& input': { fontSize: 22, fontWeight: 500 } }}
           />
 
