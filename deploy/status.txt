@@ -1,5 +1,5 @@
-commit=5a141a43881b088c13c1d4646907ab48877ae15a
+commit=aeedbcd4ab42b9b909602dfdf700b2c5d53c5a98
 resultado=success
 pulado=nao
 http=200
-run=https://github.com/ronxss/controle-financeiro-online/actions/runs/41937361262
+run=https://github.com/ronxss/controle-financeiro-online/actions/runs/41939233335
