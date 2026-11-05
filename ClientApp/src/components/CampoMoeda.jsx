@@ -1,5 +1,5 @@
 import { InputAdornment, TextField } from '@mui/material';
-import { mascaraMoeda, textoLivreParaCampo } from '../utils/format.js';
+import { MAX_DIGITOS_MOEDA, mascaraMoeda, textoLivreParaCampo } from '../utils/format.js';
 
 const digitos = (t) => String(t ?? '').replace(/\D/g, '');
 
@@ -14,6 +14,7 @@ export default function CampoMoeda({ value, onChange, slotProps, ...props }) {
     let d = digitos(novo);
     // Apagou só a vírgula ou um ponto: os dígitos não mudaram, então apaga o último dígito.
     if (d === digitos(value) && novo.length < String(value ?? '').length) d = d.slice(0, -1);
+    if (d.replace(/^0+/, '').length > MAX_DIGITOS_MOEDA) return; // campo cheio: ignora o dígito a mais
     onChange(mascaraMoeda(d));
   };
 
