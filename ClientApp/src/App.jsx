@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { Box, CircularProgress, CssBaseline, ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
+import { Box, CircularProgress, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { BotaoTema, TemaContext } from './tema.jsx';
 import { AuthProvider, useAuth } from './auth/AuthContext.jsx';
 import { MesProvider } from './MesContext.jsx';
 import Layout from './components/Layout.jsx';
@@ -25,9 +26,14 @@ function Conteudo() {
     );
   }
   if (!usuario) {
-    if (MODO_LOCAL) return <LoginLocal />;
-    // O link do e-mail de troca de senha abre esta tela mesmo sem login.
-    return window.location.pathname === '/redefinir-senha' ? <RedefinirSenha /> : <Login />;
+    // O link do e-mail de troca de senha abre a tela de redefinição mesmo sem login.
+    const tela = MODO_LOCAL ? <LoginLocal /> : window.location.pathname === '/redefinir-senha' ? <RedefinirSenha /> : <Login />;
+    return (
+      <>
+        <BotaoTema color="default" sx={{ position: 'fixed', zIndex: 10, top: 'calc(env(safe-area-inset-top) + 8px)', right: 'calc(env(safe-area-inset-right) + 8px)' }} />
+        {tela}
+      </>
+    );
   }
 
   return (
@@ -47,7 +53,10 @@ function Conteudo() {
 }
 
 export default function App() {
-  const escuro = useMediaQuery('(prefers-color-scheme: dark)');
+  // Sempre começa no escuro; o botão da barra (ou da tela de entrada) troca enquanto o app estiver aberto.
+  const [escuro, setEscuro] = useState(true);
+  const alternar = useCallback(() => setEscuro((e) => !e), []);
+  const contexto = useMemo(() => ({ escuro, alternar }), [escuro, alternar]);
 
   const tema = useMemo(
     () =>
@@ -72,11 +81,13 @@ export default function App() {
   );
 
   return (
-    <ThemeProvider theme={tema}>
-      <CssBaseline />
-      <AuthProvider>
-        <Conteudo />
-      </AuthProvider>
-    </ThemeProvider>
+    <TemaContext.Provider value={contexto}>
+      <ThemeProvider theme={tema}>
+        <CssBaseline />
+        <AuthProvider>
+          <Conteudo />
+        </AuthProvider>
+      </ThemeProvider>
+    </TemaContext.Provider>
   );
 }

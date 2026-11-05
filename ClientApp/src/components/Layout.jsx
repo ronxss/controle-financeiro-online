@@ -25,6 +25,7 @@ import ConfirmDialog from './ConfirmDialog.jsx';
 import { MODO_LOCAL } from '../modo.js';
 import { conferirBackup, exportarBackup, importarBackup, mensagemExportacao } from '../local/backup.js';
 import ConfigAparelhoDialog from './ConfigAparelhoDialog.jsx';
+import { BotaoTema } from '../tema.jsx';
 import ExportarCsvDialog from './ExportarCsvDialog.jsx';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -120,6 +121,7 @@ export default function Layout({ children }) {
             </IconButton>
           </Box>
 
+          <BotaoTema />
           <IconButton onClick={(e) => setAncora(e.currentTarget)} aria-label="Menu do usuário">
             <Avatar sx={{ width: 34, height: 34, bgcolor: 'secondary.main', fontSize: 16 }}>
               {usuario.nome.charAt(0).toUpperCase()}
