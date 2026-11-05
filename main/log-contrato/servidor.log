@@ -7,7 +7,7 @@ info: Microsoft.EntityFrameworkCore.Migrations[20402]
 warn: Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware[16]
       The WebRootPath was not found: /home/runner/work/controle-financeiro-online/controle-financeiro-online/wwwroot. Static files may be unavailable.
 warn: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager[35]
-      No XML encryptor configured. Key {1c02687e-9c16-4a2e-8f1a-4a3c73142cf1} may be persisted to storage in unencrypted form.
+      No XML encryptor configured. Key {c9188159-0c8f-4876-b8e6-cf85c7234819} may be persisted to storage in unencrypted form.
 warn: Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware[16]
       The WebRootPath was not found: /home/runner/work/controle-financeiro-online/controle-financeiro-online/wwwroot. Static files may be unavailable.
 info: Microsoft.Hosting.Lifetime[14]
