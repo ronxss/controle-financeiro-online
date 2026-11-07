@@ -46,10 +46,36 @@ builder.Services
         o.Lockout.AllowedForNewUsers = true;
         o.Lockout.MaxFailedAccessAttempts = 5;
         o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
+
+        // Versão 3 do esquema do Identity: inclui a tabela de passkeys (entrar com o desbloqueio do aparelho).
+        o.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddErrorDescriber<IdentityErrorDescriberPtBr>()
     .AddDefaultTokenProviders();
+
+// Passkeys (WebAuthn): entrar com Face ID, digital ou PIN do aparelho. A conferência é toda do Identity;
+// aqui só as regras: desbloqueio do próprio aparelho, com verificação da pessoa, e domínio fixo em produção.
+builder.Services.Configure<IdentityPasskeyOptions>(o =>
+{
+    o.AuthenticatorAttachment = "platform";
+    o.UserVerificationRequirement = "required";
+    o.ResidentKeyRequirement = "required"; // a passkey guarda a conta: entrar sem digitar o e-mail
+    o.AuthenticatorTimeout = TimeSpan.FromMinutes(2);
+    var urlPublica = builder.Configuration["App:UrlPublica"];
+    if (Uri.TryCreate(urlPublica, UriKind.Absolute, out var u)) o.ServerDomain = u.Host;
+});
+// O estado do pedido de passkey fica num cookie curto do Identity (o mesmo do segundo fator).
+builder.Services.Configure<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(IdentityConstants.TwoFactorUserIdScheme, o =>
+{
+    o.Cookie.Name = "cf.passkey";
+    o.Cookie.HttpOnly = true;
+    o.Cookie.SameSite = SameSiteMode.Strict;
+    o.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+    o.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testes")
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+});
 
 // Link de troca de senha por e-mail: vale 1 hora (e deixa de valer assim que a senha muda).
 builder.Services.Configure<DataProtectionTokenProviderOptions>(o => o.TokenLifespan = TimeSpan.FromHours(1));
