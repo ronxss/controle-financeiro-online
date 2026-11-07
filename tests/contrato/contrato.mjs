@@ -3,6 +3,7 @@
 // e as respostas são comparadas (depois de traduzir ids e trocar carimbos de data/hora por um marcador).
 //
 // Uso (o CI faz isso):  TZ=America/Sao_Paulo SERVIDOR=http://localhost:5080 PASTA_EMAILS=/tmp/emails node tests/contrato/contrato.mjs
+import { Autenticador } from './autenticador.mjs';
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import { criarEstadoInicial, rotear, ErroLocal, hojeISO, somarMeses, lerBackup, gerarCsv } from '../../ClientApp/src/local/engine.js';
@@ -20,19 +21,26 @@ const ultimoDia = (mes) => dia(mes, new Date(Number(mes.slice(0, 4)), Number(mes
 // ------------------------------------------------------------------ clientes
 
 class ClienteServidor {
-  constructor() { this.cookie = ''; }
-  async pedir(metodo, url, corpo, { bruto = false } = {}) {
+  constructor() { this.cookies = new Map(); }
+  get cookie() { return [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; '); }
+  async pedir(metodo, url, corpo, { bruto = false, origem } = {}) {
     const r = await fetch(SERVIDOR + url, {
       method: metodo,
       headers: {
         'X-Requested-With': 'XMLHttpRequest',
         ...(corpo === undefined ? {} : { 'Content-Type': 'application/json' }),
         ...(this.cookie ? { Cookie: this.cookie } : {}),
+        ...(origem ? { Origin: origem } : {}),
       },
       body: corpo === undefined ? undefined : (typeof corpo === 'string' ? corpo : JSON.stringify(corpo)),
     });
     const sc = r.headers.getSetCookie?.() ?? [];
-    for (const c of sc) if (c.startsWith('cf.auth=')) this.cookie = c.split(';')[0];
+    for (const c of sc) {
+      const [par] = c.split(';');
+      const i = par.indexOf('=');
+      const [k, v] = [par.slice(0, i), par.slice(i + 1)];
+      if (!v || /expires=Thu, 01 Jan 1970/i.test(c)) this.cookies.delete(k); else this.cookies.set(k, v);
+    }
     const texto = await r.text();
     if (bruto) return { status: r.status, texto, headers: r.headers };
     let json = null;
@@ -446,6 +454,79 @@ async function testarTrocaDeSenha() {
   console.log('ok - troca de senha por e-mail');
 }
 
+// ------------------------------------------------------------------ passkeys (desbloqueio do aparelho)
+
+async function testarPasskeys() {
+  const ORIGEM = new URL(SERVIDOR).origin;
+  const o = { origem: ORIGEM };
+  const aut = new Autenticador(ORIGEM);
+  const c = new ClienteServidor();
+  await c.registrar();
+
+  // Ativar exige a senha atual.
+  assert.equal((await c.pedir('POST', '/api/auth/passkeys/opcoes-criacao', {}, o)).status, 400);
+  const errada = await c.pedir('POST', '/api/auth/passkeys/opcoes-criacao', { senha: 'Errada123' }, o);
+  assert.equal(errada.status, 400);
+  assert.match(errada.corpo.mensagem, /senha está incorreta/);
+  assert.equal((await new ClienteServidor().pedir('POST', '/api/auth/passkeys/opcoes-criacao', { senha: SENHA }, o)).status, 401);
+
+  const criacao = (await c.pedir('POST', '/api/auth/passkeys/opcoes-criacao', { senha: SENHA }, o)).corpo;
+  assert.equal(criacao.rp.id, new URL(SERVIDOR).hostname);
+  assert.equal(criacao.user.name, c.email);
+  assert.equal(criacao.authenticatorSelection.userVerification, 'required');
+  assert.equal(criacao.authenticatorSelection.residentKey, 'required');
+  assert.equal(criacao.authenticatorSelection.authenticatorAttachment, 'platform');
+
+  const reg = await aut.criar(criacao);
+  const r = await c.pedir('POST', '/api/auth/passkeys', { credencial: JSON.stringify(reg), nome: 'Celular do CI' }, o);
+  assert.equal(r.status, 200, JSON.stringify(r));
+  assert.equal(r.corpo.id, reg.id);
+  assert.deepEqual(r.corpo.passkeys.map((x) => [x.id, x.nome]), [[reg.id, 'Celular do CI']]);
+  // O mesmo pedido de cadastro não vale duas vezes (o desafio é de uso único).
+  assert.equal((await c.pedir('POST', '/api/auth/passkeys', { credencial: JSON.stringify(reg) }, o)).status, 400);
+  // Cadastro sem verificação da pessoa (UV) é recusado.
+  const semUv = await aut.criar((await c.pedir('POST', '/api/auth/passkeys/opcoes-criacao', { senha: SENHA }, o)).corpo, { uv: false });
+  assert.equal((await c.pedir('POST', '/api/auth/passkeys', { credencial: JSON.stringify(semUv) }, o)).status, 400);
+  assert.equal((await c.pedir('GET', '/api/auth/passkeys')).corpo.length, 1);
+
+  // Entrar com o desbloqueio (sem e-mail nem senha).
+  await c.pedir('POST', '/api/auth/sair');
+  assert.equal((await c.pedir('GET', '/api/auth/eu')).status, 401);
+  const entrar = async (cli, mexer = {}) => {
+    const opcoes = (await cli.pedir('POST', '/api/auth/passkeys/opcoes-entrada', undefined, o)).corpo;
+    const resp = await aut.assinar(opcoes, reg.id, mexer);
+    return { resp, r: await cli.pedir('POST', '/api/auth/passkeys/entrar', { credencial: JSON.stringify(resp) }, o) };
+  };
+  const ok = await entrar(c);
+  assert.equal(ok.r.status, 200, JSON.stringify(ok.r));
+  assert.equal(ok.r.corpo.email, c.email);
+  assert.equal((await c.pedir('GET', '/api/auth/eu')).corpo.email, c.email, 'a sessão abriu');
+  // Reenviar a mesma resposta (sem novo desafio) não entra.
+  const replay = await new ClienteServidor().pedir('POST', '/api/auth/passkeys/entrar', { credencial: JSON.stringify(ok.resp) }, o);
+  assert.equal(replay.status, 401);
+
+  // Ataques: assinatura adulterada, outra origem, outro domínio, sem verificação da pessoa.
+  for (const [nome, mexer] of [
+    ['assinatura adulterada', { adulterar: true }], ['origem de outro site', { origem: 'https://golpe.example' }],
+    ['outro domínio', { rpId: 'golpe.example' }], ['sem verificação da pessoa', { uv: false }],
+  ]) {
+    const x = new ClienteServidor();
+    const { r: falha } = await entrar(x, mexer);
+    assert.equal(falha.status, 401, `${nome}: ${JSON.stringify(falha)}`);
+    assert.equal((await x.pedir('GET', '/api/auth/eu')).status, 401, `${nome}: não pode abrir sessão`);
+  }
+
+  // Outro usuário não remove a passkey de ninguém; o dono remove e ela deixa de entrar.
+  const b = new ClienteServidor();
+  await b.registrar();
+  assert.equal((await b.pedir('DELETE', `/api/auth/passkeys/${reg.id}`)).status, 404);
+  assert.equal((await b.pedir('GET', '/api/auth/passkeys')).corpo.length, 0);
+  assert.equal((await c.pedir('DELETE', `/api/auth/passkeys/${reg.id}`)).corpo.length, 0);
+  await c.pedir('POST', '/api/auth/sair');
+  assert.equal((await entrar(new ClienteServidor())).r.status, 401, 'passkey removida não entra');
+  console.log('ok - passkeys: ativar, entrar, ataques recusados e remoção');
+}
+
 // ------------------------------------------------------------------ isolamento entre usuários
 
 async function testarIsolamento() {
@@ -475,7 +556,7 @@ let falhas = 0;
 for (const [nome, cenario] of Object.entries(cenarios)) {
   try { await rodar(nome, cenario); } catch (e) { falhas += 1; console.error(`FALHOU - ${nome}\n${e.message}\n`); }
 }
-for (const [nome, fn] of [['backup e CSV', testarBackupECsv], ['troca de senha', testarTrocaDeSenha], ['isolamento', testarIsolamento]]) {
+for (const [nome, fn] of [['backup e CSV', testarBackupECsv], ['troca de senha', testarTrocaDeSenha], ['passkeys', testarPasskeys], ['isolamento', testarIsolamento]]) {
   try { await fn(); } catch (e) { falhas += 1; console.error(`FALHOU - ${nome}\n${e.message}\n`); }
 }
 console.log(falhas ? `\n${falhas} grupo(s) com falha` : '\ntodos os contratos conferem');

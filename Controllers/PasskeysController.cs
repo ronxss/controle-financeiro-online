@@ -81,7 +81,16 @@ public class PasskeysController(
         var user = await users.GetUserAsync(User);
         if (user is null) return Unauthorized();
 
-        var resultado = await signIn.PerformPasskeyAttestationAsync(req.Credencial!);
+        PasskeyAttestationResult resultado;
+        try
+        {
+            resultado = await signIn.PerformPasskeyAttestationAsync(req.Credencial!);
+        }
+        catch (InvalidOperationException e)
+        {
+            log.LogInformation("Cadastro de passkey sem estado: {Motivo}", e.Message);
+            return BadRequest(new { mensagem = "O pedido expirou. Tente ativar de novo." });
+        }
         if (!resultado.Succeeded)
         {
             log.LogInformation("Cadastro de passkey recusado: {Motivo}", resultado.Failure?.Message);
