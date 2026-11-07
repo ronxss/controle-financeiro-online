@@ -18,13 +18,6 @@ const lembrar = (nome) => { try { localStorage.setItem(CHAVE_ULTIMO, nome); } ca
 export const listarUsuarios = () => servico.listar();
 export const temDadosAntigos = () => servico.temLegado();
 
-export async function criarConta(nome, senha) {
-  const s = await servico.criar(nome, senha);
-  abrirSessao(s);
-  lembrar(s.usuario.nome);
-  return { usuario: paraTela(s.usuario), adotouLegado: s.adotouLegado };
-}
-
 // Logo depois de entrar com a senha, o app oferece ligar o desbloqueio sem pedir a senha de novo.
 // Ela fica só na memória, por poucos minutos, e é apagada ao responder a oferta ou sair.
 let senhaRecente = null;
@@ -36,6 +29,14 @@ const guardarSenhaRecente = (senha) => {
 };
 const esquecerSenhaRecente = () => { senhaRecente = null; clearTimeout(limpeza); };
 const chaveDispensado = (id) => `controle-financeiro:desbloqueio-dispensado:${id}`;
+
+export async function criarConta(nome, senha) {
+  const s = await servico.criar(nome, senha);
+  abrirSessao(s);
+  lembrar(s.usuario.nome);
+  guardarSenhaRecente(senha);
+  return { usuario: paraTela(s.usuario), adotouLegado: s.adotouLegado };
+}
 
 export async function entrar(nome, senha) {
   const s = await servico.entrar(nome, senha);
