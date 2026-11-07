@@ -1,4 +1,5 @@
 using ControleFinanceiro.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+
+        // O esquema v3 do Identity (passkeys) também encurta colunas antigas, algumas de chave primária.
+        // Mantém o tamanho que o banco já tem: a migração só cria a tabela de passkeys.
+        b.Entity<IdentityUserLogin<string>>(e =>
+        {
+            e.Property(l => l.LoginProvider).Metadata.SetMaxLength(null);
+            e.Property(l => l.ProviderKey).Metadata.SetMaxLength(null);
+        });
+        b.Entity<IdentityUserToken<string>>(e =>
+        {
+            e.Property(t => t.LoginProvider).Metadata.SetMaxLength(null);
+            e.Property(t => t.Name).Metadata.SetMaxLength(null);
+        });
+        b.Entity<ApplicationUser>().Property(u => u.PhoneNumber).Metadata.SetMaxLength(null);
 
         b.Entity<ApplicationUser>().Property(u => u.NomeCompleto).HasMaxLength(100);
 
