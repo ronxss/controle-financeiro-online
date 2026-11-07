@@ -1,5 +1,5 @@
   Determining projects to restore...
-  Restored /home/runner/work/controle-financeiro-online/controle-financeiro-online/ControleFinanceiro.csproj (in 2.42 sec).
+  Restored /home/runner/work/controle-financeiro-online/controle-financeiro-online/ControleFinanceiro.csproj (in 2.85 sec).
 /home/runner/work/controle-financeiro-online/controle-financeiro-online/Services/Email.cs(89,87): warning CS8604: Possible null reference argument for parameter 'password' in 'Task MailService.AuthenticateAsync(string userName, string password, CancellationToken cancellationToken = default(CancellationToken))'. [/home/runner/work/controle-financeiro-online/controle-financeiro-online/ControleFinanceiro.csproj]
   ControleFinanceiro -> /home/runner/work/controle-financeiro-online/controle-financeiro-online/bin/Release/net10.0/ControleFinanceiro.dll
 
@@ -9,4 +9,4 @@ Build succeeded.
     1 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:09.81
+Time Elapsed 00:00:07.63
