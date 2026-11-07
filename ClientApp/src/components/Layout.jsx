@@ -32,6 +32,8 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import DesbloqueioDialog from './DesbloqueioDialog.jsx';
 import { desbloqueioDisponivel, deveOfertarDesbloqueio } from '../local/auth.js';
+import PasskeysDialog from './PasskeysDialog.jsx';
+import { deveOfertar as deveOfertarPasskey, passkeysDisponiveis } from '../passkeysOnline.js';
 
 const LARGURA = 220;
 const ITENS = [
@@ -56,12 +58,14 @@ export default function Layout({ children }) {
   // Desbloqueio do aparelho (modo local): opção no menu e oferta única logo depois de entrar com a senha.
   const [temDesbloqueio, setTemDesbloqueio] = useState(false);
   const [desbloqueio, setDesbloqueio] = useState(null); // null | { oferta: bool }
+  // (versão online: passkeys conferidas pelo servidor; mesma opção no menu e mesma oferta.)
   useEffect(() => {
-    if (!MODO_LOCAL) return undefined;
     let vivo = true;
-    desbloqueioDisponivel().then((d) => vivo && setTemDesbloqueio(d));
-    deveOfertarDesbloqueio().then((o) => vivo && o && setDesbloqueio({ oferta: true })).catch(() => {});
+    (MODO_LOCAL ? desbloqueioDisponivel() : passkeysDisponiveis()).then((d) => vivo && setTemDesbloqueio(d));
+    (MODO_LOCAL ? deveOfertarDesbloqueio() : deveOfertarPasskey(usuario.email))
+      .then((o) => vivo && o && setDesbloqueio({ oferta: true })).catch(() => {});
     return () => { vivo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Backup (só no modo local, onde os dados existem apenas no aparelho).
@@ -151,7 +155,7 @@ export default function Layout({ children }) {
                 <ListItemIcon><LockResetIcon fontSize="small" /></ListItemIcon>Alterar senha
               </MenuItem>
             )}
-            {MODO_LOCAL && temDesbloqueio && (
+            {temDesbloqueio && (
               <MenuItem onClick={() => { setAncora(null); setDesbloqueio({ oferta: false }); }}>
                 <ListItemIcon><FingerprintIcon fontSize="small" /></ListItemIcon>Desbloqueio do aparelho
               </MenuItem>
@@ -234,10 +238,15 @@ export default function Layout({ children }) {
       )}
 
       <SenhaDialog open={senhaAberta} onClose={() => setSenhaAberta(false)} />
-      {MODO_LOCAL && (
+      {MODO_LOCAL ? (
         <DesbloqueioDialog
           open={Boolean(desbloqueio)} oferta={desbloqueio?.oferta} onAviso={setAviso}
           onClose={() => setDesbloqueio(null)}
+        />
+      ) : (
+        <PasskeysDialog
+          open={Boolean(desbloqueio)} oferta={desbloqueio?.oferta} onAviso={setAviso} email={usuario.email}
+          temSenha={usuario.temSenha} onClose={() => setDesbloqueio(null)}
         />
       )}
       {<ExportarCsvDialog open={csvAberto} mes={mes} onClose={() => setCsvAberto(false)} onAviso={setAviso} />}

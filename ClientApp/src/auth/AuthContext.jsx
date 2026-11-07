@@ -4,6 +4,7 @@ import { MODO_LOCAL } from '../modo.js';
 import { solicitarPersistencia } from '../local/armazenamento.js';
 import * as contaLocal from '../local/auth.js';
 import { iniciarServicosAparelho } from '../local/servicosAparelho.js';
+import { esquecerSenhaRecente, lembrarSenhaRecente } from '../passkeysOnline.js';
 
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
@@ -32,6 +33,12 @@ export function AuthProvider({ children }) {
   // ----- Modo servidor (ASP.NET Core) -----
   const entrar = useCallback(async (email, senha) => {
     setUsuario(await api.post('/api/auth/entrar', { email, senha }));
+    lembrarSenhaRecente(senha); // por 5 min, só na memória: a oferta de ativar o desbloqueio vira um toque
+  }, []);
+
+  /** Entrar com o desbloqueio do aparelho: `credencial` é a resposta do aparelho em JSON. */
+  const entrarComPasskey = useCallback(async (credencial) => {
+    setUsuario(await api.post('/api/auth/passkeys/entrar', { credencial }));
   }, []);
 
   const registrar = useCallback(async (nome, email, senha) => {
@@ -64,12 +71,13 @@ export function AuthProvider({ children }) {
       setUsuario(null);
       return;
     }
+    esquecerSenhaRecente();
     try { await api.post('/api/auth/sair'); } finally { setUsuario(null); }
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ usuario, carregando, entrar, registrar, entrarComGoogle, entrarLocal, entrarLocalDesbloqueio, criarContaLocal, sair }}
+      value={{ usuario, carregando, entrar, registrar, entrarComGoogle, entrarComPasskey, entrarLocal, entrarLocalDesbloqueio, criarContaLocal, sair }}
     >
       {children}
     </AuthContext.Provider>

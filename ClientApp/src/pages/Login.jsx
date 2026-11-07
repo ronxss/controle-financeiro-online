@@ -9,9 +9,11 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { api } from '../api.js';
 import GoogleButton from '../components/GoogleButton.jsx';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
+import { assinarEntrada, passkeyDesteAparelho, passkeysDisponiveis, prepararEntrada } from '../passkeysOnline.js';
 
 export default function Login() {
-  const { entrar, registrar, entrarComGoogle } = useAuth();
+  const { entrar, registrar, entrarComGoogle, entrarComPasskey } = useAuth();
   const [googleClientId, setGoogleClientId] = useState(null);
   const [aba, setAba] = useState(0); // 0 = entrar, 1 = criar conta
   const [nome, setNome] = useState('');
@@ -28,6 +30,39 @@ export default function Login() {
   useEffect(() => {
     api.get('/api/auth/config').then((c) => setGoogleClientId(c?.googleClientId || null)).catch(() => {});
   }, []);
+
+  // Desbloqueio do aparelho: aparece se uma passkey foi ativada neste aparelho. O desafio é pedido antes do toque
+  // (o Safari só mostra o Face ID logo depois de um toque) e renovado a cada 4 minutos (ele vale 5).
+  const [desafio, setDesafio] = useState(null);
+  const [comPasskey, setComPasskey] = useState(false);
+  const renovarDesafio = () => prepararEntrada().then(setDesafio).catch(() => setDesafio(null));
+  useEffect(() => {
+    let vivo = true;
+    let t;
+    if (passkeyDesteAparelho()) {
+      passkeysDisponiveis().then((ok) => {
+        if (!vivo || !ok) return;
+        setComPasskey(true);
+        renovarDesafio();
+        t = setInterval(renovarDesafio, 4 * 60 * 1000);
+      });
+    }
+    return () => { vivo = false; clearInterval(t); };
+  }, []);
+
+  const entrarComDesbloqueio = async () => {
+    setErro('');
+    setEnviando(true);
+    try {
+      const opcoes = desafio ?? (await prepararEntrada()); // se ainda não chegou, pede agora
+      setDesafio(null);
+      await entrarComPasskey(await assinarEntrada(opcoes));
+    } catch (err) {
+      setErro(err.message || 'Não foi possível entrar com o desbloqueio do aparelho.');
+      renovarDesafio(); // cada desafio vale uma vez
+      setEnviando(false);
+    }
+  };
 
   const aoReceberGoogle = async (credential) => {
     setErro('');
@@ -96,6 +131,14 @@ export default function Login() {
               <Button type="submit" variant="contained" size="large" disabled={enviando || !email || !senha}>
                 {novo ? 'Criar conta' : 'Entrar'}
               </Button>
+              {!novo && comPasskey && (
+                <>
+                  <Divider>ou</Divider>
+                  <Button variant="outlined" size="large" startIcon={<FingerprintIcon />} onClick={entrarComDesbloqueio} disabled={enviando}>
+                    Entrar com desbloqueio do aparelho
+                  </Button>
+                </>
+              )}
               {!novo && (
                 <Link component="button" type="button" variant="body2" onClick={() => setEsqueci(true)} sx={{ alignSelf: 'center' }}>
                   Esqueci minha senha
