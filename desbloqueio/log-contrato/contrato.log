@@ -12,6 +12,7 @@ ok - CSV idêntico
 ok - backup do servidor abre no app local
 ok - backup inválido recusado sem perder dados
 ok - troca de senha por e-mail
+ok - passkeys: ativar, entrar, ataques recusados e remoção
 ok - um usuário não vê nem altera dados de outro
 
 todos os contratos conferem
