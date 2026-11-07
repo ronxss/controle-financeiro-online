@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar, Avatar, BottomNavigation, BottomNavigationAction, Box, Divider, Drawer, IconButton, List,
@@ -29,6 +29,9 @@ import { BotaoTema } from '../tema.jsx';
 import ExportarCsvDialog from './ExportarCsvDialog.jsx';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
+import DesbloqueioDialog from './DesbloqueioDialog.jsx';
+import { desbloqueioDisponivel, deveOfertarDesbloqueio } from '../local/auth.js';
 
 const LARGURA = 220;
 const ITENS = [
@@ -50,6 +53,16 @@ export default function Layout({ children }) {
   const [senhaAberta, setSenhaAberta] = useState(false);
   const [configAberta, setConfigAberta] = useState(false);
   const [csvAberto, setCsvAberto] = useState(false);
+  // Desbloqueio do aparelho (modo local): opção no menu e oferta única logo depois de entrar com a senha.
+  const [temDesbloqueio, setTemDesbloqueio] = useState(false);
+  const [desbloqueio, setDesbloqueio] = useState(null); // null | { oferta: bool }
+  useEffect(() => {
+    if (!MODO_LOCAL) return undefined;
+    let vivo = true;
+    desbloqueioDisponivel().then((d) => vivo && setTemDesbloqueio(d));
+    deveOfertarDesbloqueio().then((o) => vivo && o && setDesbloqueio({ oferta: true })).catch(() => {});
+    return () => { vivo = false; };
+  }, []);
 
   // Backup (só no modo local, onde os dados existem apenas no aparelho).
   const [aviso, setAviso] = useState('');
@@ -138,6 +151,11 @@ export default function Layout({ children }) {
                 <ListItemIcon><LockResetIcon fontSize="small" /></ListItemIcon>Alterar senha
               </MenuItem>
             )}
+            {MODO_LOCAL && temDesbloqueio && (
+              <MenuItem onClick={() => { setAncora(null); setDesbloqueio({ oferta: false }); }}>
+                <ListItemIcon><FingerprintIcon fontSize="small" /></ListItemIcon>Desbloqueio do aparelho
+              </MenuItem>
+            )}
             {MODO_LOCAL && (
               <MenuItem onClick={() => { setAncora(null); setConfigAberta(true); }}>
                 <ListItemIcon><NotificationsIcon fontSize="small" /></ListItemIcon>Lembretes e backup
@@ -216,6 +234,12 @@ export default function Layout({ children }) {
       )}
 
       <SenhaDialog open={senhaAberta} onClose={() => setSenhaAberta(false)} />
+      {MODO_LOCAL && (
+        <DesbloqueioDialog
+          open={Boolean(desbloqueio)} oferta={desbloqueio?.oferta} onAviso={setAviso}
+          onClose={() => setDesbloqueio(null)}
+        />
+      )}
       {<ExportarCsvDialog open={csvAberto} mes={mes} onClose={() => setCsvAberto(false)} onAviso={setAviso} />}
       {MODO_LOCAL && <ConfigAparelhoDialog open={configAberta} onClose={() => setConfigAberta(false)} onExportar={aoExportar} />}
 

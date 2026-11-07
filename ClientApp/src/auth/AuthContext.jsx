@@ -47,6 +47,10 @@ export function AuthProvider({ children }) {
     setUsuario(await contaLocal.entrar(nome, senha));
   }, []);
 
+  const entrarLocalDesbloqueio = useCallback(async (dados) => {
+    setUsuario(await contaLocal.entrarComDesbloqueio(dados));
+  }, []);
+
   /** Devolve { adotouLegado } para a tela poder avisar que os dados antigos foram trazidos para a conta. */
   const criarContaLocal = useCallback(async (nome, senha) => {
     const r = await contaLocal.criarConta(nome, senha);
@@ -65,7 +69,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ usuario, carregando, entrar, registrar, entrarComGoogle, entrarLocal, criarContaLocal, sair }}
+      value={{ usuario, carregando, entrar, registrar, entrarComGoogle, entrarLocal, entrarLocalDesbloqueio, criarContaLocal, sair }}
     >
       {children}
     </AuthContext.Provider>

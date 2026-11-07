@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
 import {
   Alert, Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-  IconButton, InputAdornment, Link, Stack, Tab, Tabs, TextField, Typography,
+  Divider, IconButton, InputAdornment, Link, Stack, Tab, Tabs, TextField, Typography,
 } from '@mui/material';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import { useAuth } from '../auth/AuthContext.jsx';
-import { excluirConta, listarUsuarios, temDadosAntigos, ultimoUsuario } from '../local/auth.js';
+import {
+  desbloqueioDaConta, desbloqueioDisponivel, excluirConta, listarUsuarios, temDadosAntigos, ultimoUsuario,
+} from '../local/auth.js';
 import { cancelarNotificacoes } from '../local/servicosAparelho.js';
 
 /** Entrar / criar conta no modo local. As contas existem só neste aparelho e protegem (criptografam) os dados. */
 export default function LoginLocal() {
-  const { entrarLocal, criarContaLocal } = useAuth();
+  const { entrarLocal, entrarLocalDesbloqueio, criarContaLocal } = useAuth();
   const [pronto, setPronto] = useState(false);
   const [aba, setAba] = useState(0); // 0 = entrar, 1 = criar conta
   const [nome, setNome] = useState(ultimoUsuario());
@@ -26,6 +29,29 @@ export default function LoginLocal() {
   const [esqueci, setEsqueci] = useState(false);
 
   const novo = aba === 1;
+
+  // Desbloqueio do aparelho: os dados da passkey da conta digitada ficam prontos antes do toque
+  // (o Safari só mostra o Face ID se o pedido sair logo depois do toque).
+  const [aparelhoOk, setAparelhoOk] = useState(false);
+  const [desbloqueio, setDesbloqueio] = useState(null);
+  useEffect(() => { desbloqueioDisponivel().then(setAparelhoOk); }, []);
+  useEffect(() => {
+    if (!aparelhoOk || novo || !nome.trim()) { setDesbloqueio(null); return undefined; }
+    let vivo = true;
+    const t = setTimeout(() => desbloqueioDaConta(nome).then((d) => vivo && setDesbloqueio(d)), 150);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [nome, novo, aparelhoOk]);
+
+  const entrarComDesbloqueio = async () => {
+    setErro('');
+    setEnviando(true);
+    try {
+      await entrarLocalDesbloqueio(desbloqueio);
+    } catch (err) {
+      setErro(err.message || 'Não foi possível entrar com o desbloqueio. Entre com a senha.');
+      setEnviando(false);
+    }
+  };
 
   useEffect(() => {
     let ativo = true;
@@ -121,6 +147,17 @@ export default function LoginLocal() {
               <Button type="submit" variant="contained" size="large" disabled={enviando || !nome.trim() || !senha || (novo && !confirmar)}>
                 {enviando ? (novo ? 'Criando…' : 'Entrando…') : novo ? 'Criar conta' : 'Entrar'}
               </Button>
+
+              {!novo && desbloqueio && (
+                <>
+                  <Divider>ou</Divider>
+                  <Button
+                    variant="outlined" size="large" startIcon={<FingerprintIcon />} onClick={entrarComDesbloqueio} disabled={enviando}
+                  >
+                    Entrar com desbloqueio do aparelho
+                  </Button>
+                </>
+              )}
 
               {!novo && (
                 <Link component="button" type="button" variant="body2" onClick={() => setEsqueci(true)} sx={{ alignSelf: 'center' }}>

@@ -12,6 +12,11 @@
 // - Cada gravação usa um IV novo e aleatório. O id do usuário entra como "dado autenticado": um bloco cifrado de
 //   uma conta não abre se for copiado para outra.
 //
+// DESBLOQUEIO DO APARELHO (opcional): uma passkey com a extensão PRF do WebAuthn devolve um segredo que só sai do
+// celular depois do Face ID, digital ou PIN. Esse segredo (via HKDF) cifra os bits da chave da senha. Para entrar,
+// o aparelho é desbloqueado, o segredo volta e abre a chave. A senha continua sem ser gravada, e trocá-la desliga
+// o desbloqueio (ele guardava a chave antiga). A parte do navegador fica em desbloqueio.js; aqui só os bytes.
+//
 // LIMITE IMPORTANTE: não há recuperação de senha. Sem a senha, os dados ficam ilegíveis para todos, inclusive para
 // o autor do app. O backup (Exportar/Importar) é a rede de segurança — e o arquivo de backup NÃO é criptografado.
 //
@@ -25,6 +30,7 @@ const CHAVE_LEGADO = 'principal'; // versão anterior do app: um único conjunto
 const chaveEstado = (id) => `estado:${id}`;
 const aadEstado = (id) => `estado:${id}`;
 const aadVerificador = (id) => `verificador:${id}`;
+const aadDesbloqueio = (id) => `desbloqueio:${id}`;
 
 const codificar = new TextEncoder();
 const decodificar = new TextDecoder();
@@ -65,14 +71,25 @@ const deB64 = (texto) => Uint8Array.from(atob(texto), (c) => c.charCodeAt(0));
 const aleatorio = (n) => crypto.getRandomValues(new Uint8Array(n));
 const idAleatorio = () => Array.from(aleatorio(12), (b) => b.toString(16).padStart(2, '0')).join('');
 
+/** Os 256 bits da chave da senha (PBKDF2). São os mesmos que um deriveKey para AES-256 produziria. */
+async function derivarBits(senha, sal, iteracoes) {
+  const material = await crypto.subtle.importKey('raw', codificar.encode(senha.normalize('NFKC')), 'PBKDF2', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: sal, iterations: iteracoes, hash: 'SHA-256' }, material, 256));
+}
+
+// A chave não pode ser extraída do navegador.
+const chaveDeBits = (bits) => crypto.subtle.importKey('raw', bits, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+
 async function derivarChave(senha, sal, iteracoes) {
-  const material = await crypto.subtle.importKey('raw', codificar.encode(senha.normalize('NFKC')), 'PBKDF2', false, ['deriveKey']);
+  return chaveDeBits(await derivarBits(senha, sal, iteracoes));
+}
+
+/** Chave que embrulha a chave da senha, a partir do segredo PRF da passkey (HKDF-SHA256, amarrada à conta). */
+async function chaveDoDesbloqueio(segredo, id) {
+  const base = await crypto.subtle.importKey('raw', new Uint8Array(segredo), 'HKDF', false, ['deriveKey']);
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: sal, iterations: iteracoes, hash: 'SHA-256' },
-    material,
-    { name: 'AES-GCM', length: 256 },
-    false, // a chave não pode ser extraída do navegador
-    ['encrypt', 'decrypt'],
+    { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32), info: codificar.encode(`controle-financeiro:desbloqueio:${id}`) },
+    base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'],
   );
 }
 
@@ -113,16 +130,39 @@ export function criarServicoUsuarios(repo, { iteracoes = ITERACOES } = {}) {
     try { return validarEstado(bruto); } catch { return null; }
   }
 
-  /** Abre a conta se a senha estiver certa. Devolve a chave de sessão ou lança "usuário ou senha incorretos". */
-  async function verificar(registro, senha) {
-    const chave = await derivarChave(String(senha ?? ''), deB64(registro.sal), registro.iteracoes);
+  /** Confere a senha. Devolve { chave, bits } ou lança "usuário ou senha incorretos". */
+  async function verificarComBits(registro, senha) {
+    const bits = await derivarBits(String(senha ?? ''), deB64(registro.sal), registro.iteracoes);
+    const chave = await chaveDeBits(bits);
     try {
       await decifrar(chave, registro.verificador, aadVerificador(registro.id));
     } catch {
       throw credenciaisInvalidas();
     }
-    return chave;
+    return { chave, bits };
   }
+
+  /** Abre a conta se a senha estiver certa. Devolve a chave de sessão ou lança "usuário ou senha incorretos". */
+  async function verificar(registro, senha) {
+    return (await verificarComBits(registro, senha)).chave;
+  }
+
+  /** Com a chave já conferida, devolve a sessão com os dados decifrados. */
+  async function abrir(registro, chave) {
+    const sessao = { usuario: { id: registro.id, nome: registro.nome }, chave };
+    const envelope = await repo.ler(chaveEstado(registro.id));
+    if (!envelope) return { ...sessao, estado: criarEstadoInicial() }; // conta sem dados: começa limpa
+    try {
+      return { ...sessao, estado: await carregar(sessao) };
+    } catch {
+      throw new ErroLocal(
+        'Os dados desta conta estão danificados e não puderam ser lidos. Use "Esqueci minha senha" para apagá-la, crie a conta de novo e importe um backup.',
+        500,
+      );
+    }
+  }
+
+  const desbloqueioIndisponivel = () => new ErroLocal('Não foi possível entrar com o desbloqueio do aparelho. Entre com a senha.', 401);
 
   /** Lê e decifra os dados da conta da sessão (lança erro se estiverem ilegíveis ou inválidos). */
   async function carregar(sessao) {
@@ -133,7 +173,7 @@ export function criarServicoUsuarios(repo, { iteracoes = ITERACOES } = {}) {
 
   return {
     async listar() {
-      return (await lerLista()).map(({ id, nome }) => ({ id, nome }));
+      return (await lerLista()).map(({ id, nome, desbloqueio }) => ({ id, nome, desbloqueio: Boolean(desbloqueio) }));
     },
 
     /** Há dados da versão anterior (sem senha) neste aparelho? Eles serão adotados pela primeira conta criada. */
@@ -177,19 +217,67 @@ export function criarServicoUsuarios(repo, { iteracoes = ITERACOES } = {}) {
         await derivarChave(String(senha ?? ''), aleatorio(16), iteracoes);
         throw credenciaisInvalidas();
       }
-      const chave = await verificar(registro, senha);
+      return abrir(registro, await verificar(registro, senha));
+    },
 
-      const sessao = { usuario: { id: registro.id, nome: registro.nome }, chave };
-      const envelope = await repo.ler(chaveEstado(registro.id));
-      if (!envelope) return { ...sessao, estado: criarEstadoInicial() }; // conta sem dados: começa limpa
+    // ----- Desbloqueio do aparelho -----
+
+    /** Dados públicos da passkey da conta (para pedir o desbloqueio), ou null se não estiver ativado. */
+    async desbloqueioDe(nome) {
+      const registro = achar(await lerLista(), nome);
+      if (!registro?.desbloqueio) return null;
+      const { credId, salPrf } = registro.desbloqueio;
+      return { id: registro.id, nome: registro.nome, credId, salPrf };
+    },
+
+    /**
+     * Liga o desbloqueio. Pede a senha de novo (prova de que é o dono e fonte dos bits da chave).
+     * `passkey`: { credId (base64url), salPrf (base64), segredo (bytes do PRF) }.
+     */
+    async ativarDesbloqueio(sessao, senha, passkey) {
+      const lista = await lerLista();
+      const registro = lista.find((u) => u.id === sessao.usuario.id);
+      if (!registro) throw new ErroLocal('Conta não encontrada.', 404);
+      let bits;
       try {
-        return { ...sessao, estado: await carregar(sessao) };
+        ({ bits } = await verificarComBits(registro, senha));
       } catch {
-        throw new ErroLocal(
-          'Os dados desta conta estão danificados e não puderam ser lidos. Use "Esqueci minha senha" para apagá-la, crie a conta de novo e importe um backup.',
-          500,
-        );
+        throw new ErroLocal('A senha está incorreta.', 401);
       }
+      const segredo = new Uint8Array(passkey?.segredo ?? []);
+      if (segredo.length < 32 || !passkey.credId || !passkey.salPrf) throw new ErroLocal('O aparelho não devolveu a chave do desbloqueio.', 400);
+      const embrulho = await chaveDoDesbloqueio(segredo, registro.id);
+      const atualizado = {
+        ...registro,
+        desbloqueio: {
+          credId: passkey.credId, salPrf: passkey.salPrf, criadoEm: new Date().toISOString(),
+          chave: await cifrar(embrulho, paraB64(bits), aadDesbloqueio(registro.id)),
+        },
+      };
+      await repo.gravarVarios([[CHAVE_USUARIOS, lista.map((u) => (u.id === registro.id ? atualizado : u))]]);
+    },
+
+    /** Entra com o segredo PRF devolvido pelo aparelho. Qualquer falha vira "entre com a senha". */
+    async entrarComDesbloqueio(nome, segredo) {
+      const registro = achar(await lerLista(), nome);
+      if (!registro?.desbloqueio) throw desbloqueioIndisponivel();
+      let chave;
+      try {
+        const embrulho = await chaveDoDesbloqueio(new Uint8Array(segredo), registro.id);
+        const bits = deB64(await decifrar(embrulho, registro.desbloqueio.chave, aadDesbloqueio(registro.id)));
+        chave = await chaveDeBits(bits);
+        await decifrar(chave, registro.verificador, aadVerificador(registro.id));
+      } catch {
+        throw desbloqueioIndisponivel();
+      }
+      return abrir(registro, chave);
+    },
+
+    async desativarDesbloqueio(sessao) {
+      const lista = await lerLista();
+      if (!lista.some((u) => u.id === sessao.usuario.id)) throw new ErroLocal('Conta não encontrada.', 404);
+      const sem = (u) => { const { desbloqueio: _removido, ...resto } = u; return resto; };
+      await repo.gravarVarios([[CHAVE_USUARIOS, lista.map((u) => (u.id === sessao.usuario.id ? sem(u) : u))]]);
     },
 
     carregar,
@@ -213,8 +301,9 @@ export function criarServicoUsuarios(repo, { iteracoes = ITERACOES } = {}) {
 
       const sal = aleatorio(16);
       const chave = await derivarChave(novaSenha, sal, iteracoes);
+      const { desbloqueio: _antigo, ...semDesbloqueio } = registro; // guardava a chave antiga: precisa ser ativado de novo
       const atualizado = {
-        ...registro, sal: paraB64(sal), iteracoes,
+        ...semDesbloqueio, sal: paraB64(sal), iteracoes,
         verificador: await cifrar(chave, 'ok', aadVerificador(registro.id)),
       };
       await repo.gravarVarios([

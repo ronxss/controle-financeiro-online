@@ -199,3 +199,90 @@ test('conta sem arquivo de dados abre com dados iniciais', async () => {
   const e = await svc.entrar('ana', SENHA);
   assert.ok(e.estado.categorias.length > 0);
 });
+
+// ---------------- Desbloqueio do aparelho (passkey com PRF) ----------------
+
+const segredo = (n = 7) => new Uint8Array(32).fill(n); // o que o PRF do aparelho devolveria
+const passkey = (n = 7) => ({ credId: 'cred-abc_-', salPrf: 'c2FsLXByZg==', segredo: segredo(n) });
+
+test('deriveBits + importKey dá a mesma chave que o deriveKey usado antes (contas antigas continuam abrindo)', async () => {
+  const sal = new Uint8Array(16).fill(3);
+  const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(SENHA), 'PBKDF2', false, ['deriveKey', 'deriveBits']);
+  const p = { name: 'PBKDF2', salt: sal, iterations: 1000, hash: 'SHA-256' };
+  const antiga = await crypto.subtle.deriveKey(p, material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  const nova = await crypto.subtle.importKey('raw', await crypto.subtle.deriveBits(p, material, 256), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+  const iv = new Uint8Array(12);
+  const c = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, antiga, new TextEncoder().encode('teste'));
+  assert.equal(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, nova, c)), 'teste');
+});
+
+test('desbloqueio: ativar, entrar sem senha e ver os mesmos dados', async () => {
+  const { svc, repo } = novo();
+  const s = await svc.criar('ana', SENHA);
+  rotear(s.estado, 'POST', '/api/categorias', { nome: 'Pets', tipo: 'Despesa' });
+  await svc.salvar(s, s.estado);
+  assert.equal(await svc.desbloqueioDe('ana'), null);
+  assert.equal((await svc.listar())[0].desbloqueio, false);
+
+  await svc.ativarDesbloqueio(s, SENHA, passkey());
+  assert.deepEqual(await svc.desbloqueioDe('ANA'), { id: s.usuario.id, nome: 'ana', credId: 'cred-abc_-', salPrf: 'c2FsLXByZg==' });
+  assert.equal((await svc.listar())[0].desbloqueio, true);
+  assert.ok(!JSON.stringify(repo.m.get('usuarios')).includes(SENHA), 'a senha não é gravada');
+
+  const e = await svc.entrarComDesbloqueio('ana', segredo());
+  assert.equal(e.usuario.id, s.usuario.id);
+  assert.ok(e.estado.categorias.some((c) => c.nome === 'Pets'));
+  // a sessão aberta pelo desbloqueio grava dados que a senha abre
+  rotear(e.estado, 'POST', '/api/categorias', { nome: 'Academia', tipo: 'Despesa' });
+  await svc.salvar(e, e.estado);
+  assert.ok((await svc.entrar('ana', SENHA)).estado.categorias.some((c) => c.nome === 'Academia'));
+});
+
+test('desbloqueio: senha errada, segredo errado, dados adulterados e outra conta falham', async () => {
+  const { svc, repo } = novo();
+  const s = await svc.criar('ana', SENHA);
+  const b = await svc.criar('bia', SENHA);
+  await rejeita(svc.ativarDesbloqueio(s, 'Errada123', passkey()), 401, 'senha está incorreta');
+  await rejeita(svc.ativarDesbloqueio(s, SENHA, { ...passkey(), segredo: new Uint8Array(8) }), 400);
+  await rejeita(svc.ativarDesbloqueio(s, SENHA, { ...passkey(), credId: '' }), 400);
+  assert.equal(await svc.desbloqueioDe('ana'), null, 'nada foi gravado nas tentativas que falharam');
+
+  await rejeita(svc.entrarComDesbloqueio('ana', segredo()), 401, 'Entre com a senha', 'sem ativar');
+  await svc.ativarDesbloqueio(s, SENHA, passkey(7));
+  await rejeita(svc.entrarComDesbloqueio('ana', segredo(8)), 401, 'Entre com a senha');
+  await rejeita(svc.entrarComDesbloqueio('bia', segredo(7)), 401, 'Entre com a senha');
+  await rejeita(svc.entrarComDesbloqueio('ninguem', segredo(7)), 401);
+
+  // o embrulho de uma conta copiado para outra não abre (o id entra no HKDF e no AAD)
+  const lista = repo.m.get('usuarios');
+  lista.find((u) => u.nome === 'bia').desbloqueio = structuredClone(lista.find((u) => u.nome === 'ana').desbloqueio);
+  await rejeita(svc.entrarComDesbloqueio('bia', segredo(7)), 401);
+  assert.equal(b.usuario.nome, 'bia');
+
+  // adulterado
+  const ana = repo.m.get('usuarios').find((u) => u.nome === 'ana');
+  ana.desbloqueio.chave.dados = ana.desbloqueio.chave.dados.replace(/^./, (c) => (c === 'A' ? 'B' : 'A'));
+  await rejeita(svc.entrarComDesbloqueio('ana', segredo(7)), 401);
+});
+
+test('desbloqueio: desativar e trocar a senha desligam', async () => {
+  const { svc } = novo();
+  const s = await svc.criar('ana', SENHA);
+  await svc.criar('bia', SENHA);
+  const sb = await svc.entrar('bia', SENHA);
+  await svc.ativarDesbloqueio(s, SENHA, passkey(1));
+  await svc.ativarDesbloqueio(sb, SENHA, passkey(2));
+
+  await svc.desativarDesbloqueio(s);
+  assert.equal(await svc.desbloqueioDe('ana'), null);
+  await rejeita(svc.entrarComDesbloqueio('ana', segredo(1)), 401);
+  assert.ok(await svc.desbloqueioDe('bia'), 'a outra conta não muda');
+  assert.equal((await svc.entrarComDesbloqueio('bia', segredo(2))).usuario.nome, 'bia');
+
+  await svc.ativarDesbloqueio(s, SENHA, passkey(1));
+  const nova = await svc.alterarSenha(s, SENHA, 'NovaSenha9', s.estado);
+  assert.equal(await svc.desbloqueioDe('ana'), null, 'trocar a senha desliga o desbloqueio');
+  await rejeita(svc.entrarComDesbloqueio('ana', segredo(1)), 401);
+  await svc.ativarDesbloqueio(nova, 'NovaSenha9', passkey(3));
+  assert.equal((await svc.entrarComDesbloqueio('ana', segredo(3))).usuario.nome, 'ana');
+});
