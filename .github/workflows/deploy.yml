@@ -38,7 +38,7 @@ jobs:
         if: env.PULAR != 'sim'
         with:
           node-version: 24
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/setup-dotnet@v6
         if: env.PULAR != 'sim'
         with:
           dotnet-version: 10.0.x
