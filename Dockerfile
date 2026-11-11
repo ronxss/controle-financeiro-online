@@ -17,7 +17,7 @@ COPY --from=front /src/wwwroot ./wwwroot
 RUN dotnet publish -c Release -o /app -p:SkipClientBuild=true --no-restore
 
 # ---- 3) Imagem final (enxuta, sem root) ----
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS final
 WORKDIR /app
 COPY --from=build /app .
 
