@@ -1,0 +1,38 @@
+info: Microsoft.EntityFrameworkCore.Migrations[20411]
+      Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+info: Microsoft.EntityFrameworkCore.Migrations[20402]
+      Applying migration '20261104213701_Inicial'.
+info: Microsoft.EntityFrameworkCore.Migrations[20402]
+      Applying migration '20261104234407_PainelPreferencias'.
+info: Microsoft.EntityFrameworkCore.Migrations[20402]
+      Applying migration '20261107011426_Passkeys2'.
+warn: Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware[16]
+      The WebRootPath was not found: /home/runner/work/controle-financeiro-online/controle-financeiro-online/wwwroot. Static files may be unavailable.
+warn: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager[35]
+      No XML encryptor configured. Key {1cbc3038-7542-47c6-a4aa-dbd38e299e8a} may be persisted to storage in unencrypted form.
+warn: Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware[16]
+      The WebRootPath was not found: /home/runner/work/controle-financeiro-online/controle-financeiro-online/wwwroot. Static files may be unavailable.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5080
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Testes
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/runner/work/controle-financeiro-online/controle-financeiro-online
+info: ControleFinanceiro.Controllers.PasskeysController[0]
+      Cadastro de passkey sem estado: No passkey attestation is underway. Make sure to call 'SignInManager.MakePasskeyCreationOptionsAsync()' to initiate a passkey attestation.
+info: ControleFinanceiro.Controllers.PasskeysController[0]
+      Cadastro de passkey recusado: User verification is required, but the authenticator data flags did not have the 'UserVerified' flag.
+info: ControleFinanceiro.Controllers.PasskeysController[0]
+      Entrada por passkey sem estado: No passkey assertion is underway. Make sure to call 'SignInManager.MakePasskeyRequestOptionsAsync()' to initiate a passkey assertion.
+info: ControleFinanceiro.Controllers.PasskeysController[0]
+      Entrada por passkey recusada: The assertion signature was invalid.
+info: ControleFinanceiro.Controllers.PasskeysController[0]
+      Entrada por passkey recusada: The authenticator response had an invalid origin 'https://golpe.example'.
+info: ControleFinanceiro.Controllers.PasskeysController[0]
+      Entrada por passkey recusada: The authenticator data included an invalid Relying Party ID hash.
+info: ControleFinanceiro.Controllers.PasskeysController[0]
+      Entrada por passkey recusada: User verification is required, but the authenticator data flags did not have the 'UserVerified' flag.
+info: ControleFinanceiro.Controllers.PasskeysController[0]
+      Entrada por passkey recusada: The provided credential does not belong to the specified user.
